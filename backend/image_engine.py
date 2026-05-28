@@ -352,11 +352,12 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
             f.write(f"file '{cp.replace(chr(92), '/')}'\n")
 
     silent_video = GENERATED_DIR / f"{slug}_silent.mp4"
+    music_path = str(Path(__file__).parent / "assets/music/gym_beat.mp3")
     subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0",
         "-i", str(concat_file), 
-        "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
-        "-c:v", "copy", "-c:a", "aac", "-shortest", str(silent_video),
+        "-stream_loop", "-1", "-i", music_path,
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(silent_video),
     ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # ── NO background music — keep reel silent so Instagram allows trending audio ──
