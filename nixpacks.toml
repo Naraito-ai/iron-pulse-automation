@@ -1,9 +1,12 @@
-# nixpacks.toml — tells Railway to install FFmpeg (needed for video generation)
 [phases.setup]
-nixPkgs = ["ffmpeg", "python310", "gcc"]
+nixPkgs = ["ffmpeg", "python310Full", "gcc", "stdenv.cc.cc.lib"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = [
+    "python3.10 -m ensurepip --upgrade",
+    "python3.10 -m pip install --upgrade pip",
+    "python3.10 -m pip install -r requirements.txt"
+]
 
 [start]
-cmd = "cd backend && python api_server.py"
+cmd = "cd backend && python3.10 api_server.py"
