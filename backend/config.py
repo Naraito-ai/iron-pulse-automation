@@ -69,8 +69,8 @@ IMAGE_SERVER_PORT    = int(os.getenv("IMAGE_SERVER_PORT", "8888"))
 IMG_WIDTH    = 1080
 IMG_HEIGHT   = 1350
 # Reel: 9:16 full vertical
-REEL_WIDTH   = 1080
-REEL_HEIGHT  = 1920
+REEL_WIDTH   = 720
+REEL_HEIGHT  = 1280
 SLIDES_COUNT = 5
 
 # ─── Scheduler ────────────────────────────────────────────────────────────────

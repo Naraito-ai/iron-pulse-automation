@@ -301,7 +301,8 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                 "ffmpeg", "-y", "-loop", "1", "-i", bg_path,
                 "-t", str(DURATION), "-vf", zoom_vf,
                 "-fps_mode", "cfr", "-r", str(FPS),
-                "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "fast", "-crf", "22",
+                "-threads", "1",
+                "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
                 str(zoom_clip),
             ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
@@ -310,7 +311,8 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                 "ffmpeg", "-y", "-loop", "1", "-i", bg_path, "-t", str(DURATION),
                 "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}",
                 "-fps_mode", "cfr", "-r", str(FPS),
-                "-pix_fmt", "yuv420p", "-c:v", "libx264",
+                "-threads", "1",
+                "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
                 str(zoom_clip),
             ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -326,7 +328,8 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                     "-i", str(zoom_clip),
                     "-i", overlay_path,
                     "-filter_complex", "[0:v][1:v]overlay=0:0",
-                    "-c:v", "libx264", "-preset", "fast", "-crf", "20",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-threads", "1",
                     "-pix_fmt", "yuv420p",
                     str(tmp_clip),
                 ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
