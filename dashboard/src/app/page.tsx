@@ -25,6 +25,14 @@ interface TokenStatus {
 
 type Section = 'overview' | 'drafts' | 'published' | 'analytics' | 'logs';
 
+interface ScheduleSlot {
+  rank: number;
+  content_type: string;
+  time: string;
+  next_fire: string;
+  seconds_until: number;
+}
+
 const CONTENT_TYPE_META: Record<string, { icon: string; label: string; color: string }> = {
   hot_take:       { icon: '🔥', label: 'Hot Take',      color: '#FF4444' },
   quick_tip:      { icon: '⚡', label: 'Quick Tip',     color: '#FFB400' },
@@ -59,6 +67,7 @@ export default function Dashboard() {
   const [drafts,      setDrafts]      = useState<any[]>([]);
   const [published,   setPublished]   = useState<PublishedPost[]>([]);
   const [tokenStatus, setTokenStatus] = useState<TokenStatus | null>(null);
+  const [schedule,    setSchedule]    = useState<ScheduleSlot[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [triggering,  setTriggering]  = useState(false);
   const [triggerMsg,  setTriggerMsg]  = useState('');
@@ -69,13 +78,14 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [sRes, aRes, lRes, pRes, tRes, dRes] = await Promise.allSettled([
+      const [sRes, aRes, lRes, pRes, tRes, dRes, schRes] = await Promise.allSettled([
         api.status(),
         api.analytics(),
         api.logs(120),
         fetch('/api/published').then(r => r.json()),
         fetch('/api/token-status').then(r => r.json()),
         api.drafts(),
+        fetch('/api/schedule').then(r => r.json()),
       ]);
       if (sRes.status === 'fulfilled') setStatus(sRes.value);
       if (aRes.status === 'fulfilled') setAnalytics(aRes.value);
@@ -83,7 +93,7 @@ export default function Dashboard() {
       if (pRes.status === 'fulfilled') setPublished((pRes.value as any).published ?? []);
       if (tRes.status === 'fulfilled') setTokenStatus(tRes.value);
       if (dRes.status === 'fulfilled') setDrafts(dRes.value.drafts ?? []);
-      if (tRes.status === 'fulfilled') setTokenStatus(tRes.value);
+      if (schRes.status === 'fulfilled') setSchedule((schRes.value as any).schedule ?? []);
     } finally { setLoading(false); }
   }, []);
 
@@ -95,17 +105,20 @@ export default function Dashboard() {
 
   // WebSocket live logs
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8000/ws/live');
+    const wsUrl = API_BASE.replace('https://', 'wss://').replace('http://', 'ws://');
+    const ws = new WebSocket(`${wsUrl}/ws/live`);
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
         if (msg.type === 'log' || msg.level) {
           setLogs(prev => [msg, ...prev].slice(0, 200));
+          // Auto-refresh drafts when a custom post is done
+          if (msg.message?.includes('saved to Drafts')) loadData();
         }
       } catch {}
     };
     return () => ws.close();
-  }, []);
+  }, [loadData]);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -289,7 +302,7 @@ export default function Dashboard() {
       <main style={{ flex: 1, padding: '32px 36px', overflowY: 'auto', maxHeight: '100vh' }}>
         {loading ? <LoadingScreen /> : (
           <>
-            {section === 'overview'  && <OverviewSection status={status} analytics={analytics} published={published} livePublished={livePublished} successRate={successRate} />}
+            {section === 'overview'  && <OverviewSection status={status} analytics={analytics} published={published} livePublished={livePublished} successRate={successRate} schedule={schedule} />}
             {section === 'drafts'    && <DraftsSection drafts={drafts} onUpdate={loadData} />}
             {section === 'published' && <PublishedSection published={published} />}
             {section === 'analytics' && <AnalyticsSection analytics={analytics} />}
@@ -313,12 +326,13 @@ function LoadingScreen() {
 }
 
 // ─── Overview ────────────────────────────────────────────────────────────────
-function OverviewSection({ status, analytics, published, livePublished, successRate }: {
+function OverviewSection({ status, analytics, published, livePublished, successRate, schedule }: {
   status: SystemStatus | null;
   analytics: AnalyticsSummary | null;
   published: PublishedPost[];
   livePublished: PublishedPost[];
   successRate: number;
+  schedule: ScheduleSlot[];
 }) {
   const reels     = livePublished.filter(p => p.ig_permalink?.includes('/reel/'));
   const carousels = livePublished.filter(p => p.ig_permalink?.includes('/p/'));
@@ -387,32 +401,38 @@ function OverviewSection({ status, analytics, published, livePublished, successR
         </div>
       )}
 
-      {/* Next run */}
+      {/* Today's Posting Schedule */}
       <div style={{ background: '#111', border: '1px solid #1a1a1a', borderRadius: 14, padding: 24 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#888', marginBottom: 14 }}>SCHEDULER</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 10px #00FF88', flexShrink: 0 }} />
-          <div>
-            <div style={{ fontWeight: 700 }}>Next run: {status?.schedule_time ?? '09:00'} IST</div>
-            <div style={{ fontSize: 12, color: '#444', marginTop: 2 }}>
-              {status?.seconds_until_next ? `In ${Math.floor(status.seconds_until_next / 3600)}h ${Math.floor((status.seconds_until_next % 3600) / 60)}m` : 'Calculating...'}
-            </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#888', marginBottom: 16 }}>TODAY'S SCHEDULE</div>
+        {schedule.length === 0 ? (
+          <div style={{ color: '#333', fontSize: 12 }}>Schedule data loading...</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {schedule.map(slot => {
+              const meta = CONTENT_TYPE_META[slot.content_type] ?? { icon: '📄', label: slot.content_type, color: '#666' };
+              const minsUntil = Math.round(slot.seconds_until / 60);
+              const hoursUntil = Math.floor(minsUntil / 60);
+              const label = hoursUntil > 0 ? `in ${hoursUntil}h ${minsUntil % 60}m` : `in ${minsUntil}m`;
+              return (
+                <div key={slot.rank} style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  background: '#161616', borderRadius: 10, padding: '12px 16px',
+                  border: `1px solid ${meta.color}20`,
+                }}>
+                  <span style={{ fontSize: 20, flexShrink: 0 }}>{meta.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#ddd' }}>{meta.label}</div>
+                    <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>Posts at {slot.time}</div>
+                  </div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
+                    background: `${meta.color}15`, color: meta.color,
+                  }}>{label}</span>
+                </div>
+              );
+            })}
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 20, textAlign: 'center' }}>
-            {[
-              { label: '🔥 Hot Take', fmt: 'Reel' },
-              { label: '⚡ Quick Tip', fmt: 'Reel' },
-              { label: '📋 Save List', fmt: 'Carousel' },
-              { label: '🧠 Myth Buster', fmt: 'Carousel' },
-              { label: '😂 Gym Meme', fmt: 'Reel' },
-            ].map(({ label, fmt: f }) => (
-              <div key={label} style={{ fontSize: 11 }}>
-                <div style={{ color: '#666' }}>{label}</div>
-                <div style={{ color: '#444', fontSize: 10 }}>{f}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

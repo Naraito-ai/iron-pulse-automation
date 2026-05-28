@@ -238,6 +238,28 @@ async def trigger_pipeline(background_tasks: BackgroundTasks):
     return {"status": "triggered", "message": "Pre-generation starting in background..."}
 
 
+@app.get("/api/schedule")
+async def get_schedule():
+    """Return the daily posting schedule with next fire times."""
+    from main import POST_SCHEDULE
+    now = datetime.now(TIMEZONE)
+    schedule = []
+    for slot in POST_SCHEDULE:
+        h, m = slot["hour"], slot["minute"]
+        fire_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
+        if fire_time < now:
+            from datetime import timedelta
+            fire_time += timedelta(days=1)
+        schedule.append({
+            "rank": slot["rank"],
+            "content_type": slot["content_type"],
+            "time": f"{h:02d}:{m:02d} IST",
+            "next_fire": fire_time.isoformat(),
+            "seconds_until": int((fire_time - now).total_seconds()),
+        })
+    return {"schedule": schedule}
+
+
 @app.get("/api/images/thumbnails")
 async def list_thumbnails():
     """List all generated thumbnail images."""

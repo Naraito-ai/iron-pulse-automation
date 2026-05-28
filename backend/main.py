@@ -166,8 +166,11 @@ POST_SCHEDULE = [
 
 def run_custom_post(prompt: str):
     """Bypasses news and generates a single custom post immediately."""
+    from ai_writer import generate_fitness_content
+    from image_engine import generate_carousel
+    
     run_date = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
-    db.log_event("INFO", "main", f"🚀 Generating custom post: {prompt[:30]}...")
+    _broadcast("INFO", "Custom", f"🚀 Generating custom post: {prompt[:40]}...", run_date)
 
     story = {
         "title": prompt,
@@ -181,18 +184,26 @@ def run_custom_post(prompt: str):
     story_id = story_ids[0]
 
     try:
-        content = ai.generate_fitness_content(story, rank=999)
-        db.log_event("INFO", "main", f"Custom post content generated")
-        
-        post_data = img.generate_carousel(content, story, 999, run_date)
+        content = generate_fitness_content(story, rank=999)
+        _broadcast("INFO", "Custom", "Content generated, rendering media...", run_date)
+
+        post_data = generate_carousel(content, story, 999, run_date)
         post_data.update(content)
         post_data["rank"] = 999
-        
+
+        # Get public URLs
+        image_urls = get_image_urls(post_data.get("slide_paths", []))
+        post_data["image_urls"] = image_urls
+        reel_path = post_data.get("reel_path")
+        if reel_path:
+            post_data["reel_url"] = get_reel_url(reel_path)
+
         post_id = db.save_generated_post(run_date, story_id, post_data)
-        db.log_event("SUCCESS", "main", f"✅ Custom post {post_id} saved to drafts")
+        _broadcast("SUCCESS", "Custom", f"✅ Custom post #{post_id} saved to Drafts!", run_date)
     except Exception as e:
         logger.error(f"Custom post failed: {e}")
-        db.log_event("ERROR", "main", f"❌ Custom post failed: {str(e)}")
+        _broadcast("ERROR", "Custom", f"❌ Custom post failed: {str(e)}", run_date)
+
 
 
 def run_single_post(rank: int, scheduled_time: str):
