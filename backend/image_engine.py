@@ -203,12 +203,7 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
             draw.text((x, y_body), line, font=font_body, fill=(255, 136, 0, 255))
             y_body += bbox[3] - bbox[1] + 6
 
-    # Brand badge — top left pill
-    badge = "IRON PULSE"
-    badge_bbox = draw.textbbox((0, 0), badge, font=font_badge)
-    bw = badge_bbox[2] - badge_bbox[0]
-    draw.rounded_rectangle([(36, 42), (bw + 80, 96)], radius=24, fill=(0, 0, 0, 160))
-    draw.text((56, 52), badge, font=font_badge, fill=(255, 136, 0, 255))
+    # Brand badge removed — no brand name on reels
 
     overlay_path = str(GENERATED_DIR / f"{slug}_overlay{clip_idx}.png")
     overlay.save(overlay_path, "PNG")
@@ -256,13 +251,13 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
         headline = content.get("headline", "")
         bullets  = content.get("bullet_points", [])
         stat     = content.get("stat_highlight", "")
-        cta      = content.get("cta", "Follow Iron Pulse for daily fitness")
+        cta      = content.get("cta", "Follow  for daily fitness")
         slides_text = [
             {"title": headline[:70],                              "body": ""},
             {"title": bullets[0][:60] if bullets else "",         "body": stat[:60]},
             {"title": bullets[1][:60] if len(bullets) > 1 else "", "body": ""},
             {"title": bullets[2][:60] if len(bullets) > 2 else "", "body": ""},
-            {"title": cta[:70],                                   "body": "#IronPulse  #Fitness  #GymLife"},
+            {"title": cta[:70],                                   "body": "#  #Fitness  #GymLife"},
         ]
     else:
         slides_text = [{"title": "", "body": ""} for _ in slide_paths]
@@ -489,11 +484,10 @@ def _create_base_image(accent_color: tuple) -> Image.Image:
 
 
 def _draw_header_bar(draw: ImageDraw.Draw, rank: int, source: str, accent: tuple, slide_num: int, total: int):
-    """Draw top header with brand + source + slide indicator."""
-    # Brand pill background
-    _draw_rounded_rect(draw, (32, 28, 220, 68), radius=20, fill=(*accent, 30), outline=(*accent, 120), width=1)
+    """Draw top header with source badge + slide indicator (no brand name)."""
+    # Accent pill top-left (design only, no text)
+    _draw_rounded_rect(draw, (32, 28, 80, 68), radius=20, fill=(*accent, 30), outline=(*accent, 120), width=1)
     font_sm = _load_font(18, bold=True)
-    draw.text((50, 36), f"✦ {BRAND_NAME}", font=font_sm, fill=(*accent, 220))
 
     # Source badge
     if source:
@@ -539,9 +533,7 @@ def _draw_footer(draw: ImageDraw.Draw, accent: tuple):
     """Draw bottom footer bar."""
     # Neon separator
     draw.line([(40, IMG_HEIGHT - 90), (IMG_WIDTH - 40, IMG_HEIGHT - 90)], fill=(*accent, 80), width=1)
-    font_footer = _load_font(20)
-    follow_text = f"Follow @{BRAND_NAME.lower().replace(' ', '')} for daily fitness science"
-    draw.text((40, IMG_HEIGHT - 75), follow_text, font=font_footer, fill=COLORS["text_dim"])
+    # Footer: just swipe hint, no follow text
     # Swipe hint
     swipe_text = "Swipe for more →"
     swipe_font = _load_font(20)
@@ -713,8 +705,8 @@ def _create_cta_slide(content: dict, story: dict, rank: int) -> Image.Image:
     draw.text((40, y), cta_sub, font=font_small, fill=COLORS["text_secondary"])
     y += 60
 
-    # CTA pill button
-    cta_text = content.get("cta", f"Follow @{BRAND_NAME.lower().replace(' ', '')} →")
+    # CTA pill button — uses AI-generated CTA, no brand name fallback
+    cta_text = content.get("cta", "Follow for daily fitness tips →")
     bbox = draw.textbbox((0, 0), cta_text, font=font_cta)
     bw = bbox[2] - bbox[0]
     bh = bbox[3] - bbox[1]

@@ -1,6 +1,6 @@
 """
 ai_writer.py — Viral Fitness Content Engine.
-Generates 6 proven Instagram growth content types for Iron Pulse fitness page.
+Generates 6 proven Instagram growth content types for  fitness page.
 """
 
 import json
@@ -70,7 +70,7 @@ Return JSON:
   ],
   "stat_highlight": "One shocking stat that supports the hot take",
   "caption": "Instagram caption 150-250 chars. Open with bold hot take. End with debate question. Use 2-3 line breaks.",
-  "hashtags": "#HotTake #FitnessMyths #GymTruth #FitnessFacts #GymLife #Bodybuilding #Fitness #WorkoutTips #GymMotivation #IronPulse",
+  "hashtags": "#HotTake #FitnessMyths #GymTruth #FitnessFacts #GymLife #Bodybuilding #Fitness #WorkoutTips #GymMotivation #",
   "cta": "Agree or disagree? Drop your take below 👇"
 }}""",
 
@@ -96,7 +96,7 @@ Return JSON:
   ],
   "stat_highlight": "A number that proves it works (e.g. '2x more strength gains')",
   "caption": "Short punchy caption under 100 chars. Hook + one line. Line break. Hashtags.",
-  "hashtags": "#GymTip #WorkoutTips #FitnessHack #GainsTip #GymLife #Fitness #Bodybuilding #GymMotivation #TrainingTips #IronPulse",
+  "hashtags": "#GymTip #WorkoutTips #FitnessHack #GainsTip #GymLife #Fitness #Bodybuilding #GymMotivation #TrainingTips #",
   "cta": "Save for your next workout 💪"
 }}""",
 
@@ -121,7 +121,7 @@ Return JSON:
   ],
   "stat_highlight": "A stat that shows how common this mistake is",
   "caption": "Caption 200-280 chars. Open with hook. Mention 'Save 🔖'. End with 'Tag someone who needs this'. Line breaks.",
-  "hashtags": "#GainsTips #GymMistakes #FitnessAdvice #WorkoutTips #GymLife #Bodybuilding #Fitness #GymMotivation #FitnessTips #IronPulse",
+  "hashtags": "#GainsTips #GymMistakes #FitnessAdvice #WorkoutTips #GymLife #Bodybuilding #Fitness #GymMotivation #FitnessTips #",
   "cta": "Save 🔖 + Tag someone who needs this"
 }}""",
 
@@ -147,7 +147,7 @@ Return JSON:
   ],
   "stat_highlight": "A research stat that proves the myth wrong",
   "caption": "Caption 200-280 chars. Start with 'MYTH: [thing]'. Then 'FACT: [truth]'. End with save + share CTA.",
-  "hashtags": "#FitnessMyths #GymFacts #FitnessTruth #ScienceOfFitness #GymLife #Bodybuilding #WorkoutFacts #GymMotivation #FitnessEducation #IronPulse",
+  "hashtags": "#FitnessMyths #GymFacts #FitnessTruth #ScienceOfFitness #GymLife #Bodybuilding #WorkoutFacts #GymMotivation #FitnessEducation #",
   "cta": "Share this before someone you know falls for this 🔁"
 }}""",
 
@@ -173,7 +173,7 @@ Return JSON:
   ],
   "stat_highlight": "Funny fake stat or relatable number (e.g. '99% of gym bros own a creatine tub')",
   "caption": "Funny caption 100-180 chars. Use gym humor. End with 'Tag your gym partner 😂'. Line breaks.",
-  "hashtags": "#GymMemes #GymHumor #GymLife #GymProblems #GymBro #FitnessMemes #GymFunny #WorkoutMemes #GymMotivation #IronPulse",
+  "hashtags": "#GymMemes #GymHumor #GymLife #GymProblems #GymBro #FitnessMemes #GymFunny #WorkoutMemes #GymMotivation #",
   "cta": "Tag your gym partner who does this 😂"
 }}""",
 
@@ -199,7 +199,7 @@ Return JSON:
   ],
   "stat_highlight": "A timeframe or result stat (e.g. '12 weeks to visible abs')",
   "caption": "Motivational caption 200-280 chars. Personal and inspiring. End with 'Save this for when you need motivation 🔖'.",
-  "hashtags": "#TransformationTips #FitnessJourney #GymTransformation #BodyTransformation #GymMotivation #FitnessGoals #GymLife #Bodybuilding #FitLife #IronPulse",
+  "hashtags": "#TransformationTips #FitnessJourney #GymTransformation #BodyTransformation #GymMotivation #FitnessGoals #GymLife #Bodybuilding #FitLife #",
   "cta": "Save this for when you need motivation 🔖"
 }}""",
 
@@ -220,7 +220,7 @@ DEMO_CONTENT = {
         ],
         "stat_highlight": "30% less muscle growth with daily long cardio",
         "caption": "Cardio is NOT the answer to body recomposition 🔥\n\nIf you're spending 1 hour on the treadmill daily — you're working against yourself.\n\nAm I wrong? Drop your take below 👇",
-        "hashtags": "#HotTake #FitnessMyths #GymTruth #CardioKills #Bodybuilding #GymLife #Fitness #WorkoutTips #GymMotivation #IronPulse",
+        "hashtags": "#HotTake #FitnessMyths #GymTruth #CardioKills #Bodybuilding #GymLife #Fitness #WorkoutTips #GymMotivation #",
         "cta": "Agree or disagree? Comment below 👇"
     },
     "quick_tip": {
@@ -234,7 +234,7 @@ DEMO_CONTENT = {
         ],
         "stat_highlight": "2x strength gains with 3 min rest vs 1 min",
         "caption": "Stop rushing your rest periods 🛑\n\nLonger rest = more reps next set = more gains 💪\n\nSave for your next workout 🔖",
-        "hashtags": "#GymTip #WorkoutTips #FitnessHack #GainsTip #GymLife #Fitness #Bodybuilding #GymMotivation #TrainingTips #IronPulse",
+        "hashtags": "#GymTip #WorkoutTips #FitnessHack #GainsTip #GymLife #Fitness #Bodybuilding #GymMotivation #TrainingTips #",
         "cta": "Save for your next workout 💪"
     },
     "save_list": {
@@ -248,7 +248,7 @@ DEMO_CONTENT = {
         ],
         "stat_highlight": "80% of gym-goers never change their body after year 1",
         "caption": "Save 🔖 this before your next gym session.\n\nMost people train for YEARS with zero progress because of these mistakes.\n\nTag someone who needs to see this 👇",
-        "hashtags": "#GainsTips #GymMistakes #FitnessAdvice #WorkoutTips #GymLife #Bodybuilding #Fitness #GymMotivation #FitnessTips #IronPulse",
+        "hashtags": "#GainsTips #GymMistakes #FitnessAdvice #WorkoutTips #GymLife #Bodybuilding #Fitness #GymMotivation #FitnessTips #",
         "cta": "Save 🔖 + Tag someone who needs this"
     },
     "myth_buster": {
@@ -262,7 +262,7 @@ DEMO_CONTENT = {
         ],
         "stat_highlight": "4-6 hours of elevated protein synthesis after training",
         "caption": "MYTH: You must eat protein within 30 mins of training 🚫\n\nFACT: The window is 4-6 hours. Relax.\n\nShare this before your gym bro takes his shake mid-set 💀",
-        "hashtags": "#FitnessMyths #GymFacts #FitnessTruth #ScienceOfFitness #GymLife #Bodybuilding #WorkoutFacts #GymMotivation #FitnessEducation #IronPulse",
+        "hashtags": "#FitnessMyths #GymFacts #FitnessTruth #ScienceOfFitness #GymLife #Bodybuilding #WorkoutFacts #GymMotivation #FitnessEducation #",
         "cta": "Share this before someone you know falls for this 🔁"
     },
     "meme_relatable": {
@@ -276,7 +276,7 @@ DEMO_CONTENT = {
         ],
         "stat_highlight": "100% of gym-goers have waited 20 mins for a bench on Monday",
         "caption": "Monday gym culture is something else 😂\n\nTag your gym partner who benches every single day 👇",
-        "hashtags": "#GymMemes #GymHumor #GymLife #GymProblems #GymBro #FitnessMemes #GymFunny #WorkoutMemes #GymMotivation #IronPulse",
+        "hashtags": "#GymMemes #GymHumor #GymLife #GymProblems #GymBro #FitnessMemes #GymFunny #WorkoutMemes #GymMotivation #",
         "cta": "Tag your gym partner who does this 😂"
     },
     "transformation": {
@@ -290,7 +290,7 @@ DEMO_CONTENT = {
         ],
         "stat_highlight": "90 days to a completely different body with consistency",
         "caption": "Nobody talks about how SIMPLE building muscle actually is 💪\n\nNo magic program. No expensive supplements.\n\nSave this for when you need motivation 🔖",
-        "hashtags": "#TransformationTips #FitnessJourney #GymTransformation #BodyTransformation #GymMotivation #FitnessGoals #GymLife #Bodybuilding #FitLife #IronPulse",
+        "hashtags": "#TransformationTips #FitnessJourney #GymTransformation #BodyTransformation #GymMotivation #FitnessGoals #GymLife #Bodybuilding #FitLife #",
         "cta": "Save this for when you need motivation 🔖"
     },
 }

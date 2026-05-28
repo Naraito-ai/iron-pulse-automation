@@ -83,7 +83,7 @@ API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 
 # ─── Design Tokens ────────────────────────────────────────────────────────────
-BRAND_NAME = "Iron Pulse"
+BRAND_NAME = ""
 
 COLORS = {
     "bg_primary":    (10,  10,  10),      # Deep black
