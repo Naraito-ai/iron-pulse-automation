@@ -195,10 +195,19 @@ async def get_published():
     return {"published": published, "count": len(published)}
 
 
+import time
+_analytics_cache = {"data": None, "time": 0}
+
 @app.get("/api/analytics")
-async def get_analytics():
+def get_analytics():
     """Performance analytics and engagement summary."""
+    now = time.time()
+    if _analytics_cache["data"] and now - _analytics_cache["time"] < 300:
+        return _analytics_cache["data"]
+        
     summary = get_performance_summary()
+    _analytics_cache["data"] = summary
+    _analytics_cache["time"] = now
     return summary
 
 
