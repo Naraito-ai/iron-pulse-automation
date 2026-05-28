@@ -39,6 +39,7 @@ app.add_middleware(
 
 # Mount static files for image serving
 app.mount("/images", StaticFiles(directory=str(Path(__file__).parent / "assets")), name="images")
+app.mount("/generated", StaticFiles(directory=str(Path(__file__).parent / "assets/generated")), name="generated")
 
 @app.on_event("startup")
 async def startup_event():
