@@ -274,7 +274,14 @@ def run_comment_engagement():
         return
         
     model = genai.GenerativeModel('gemini-1.5-flash')
-    sys_prompt = "You are the Iron Pulse fitness brand social media manager. Keep replies very short (1-2 sentences), hype the user up, be encouraging, and use 1-2 emojis. If the comment is a question, answer it concisely."
+    sys_prompt = (
+        "You are the Iron Pulse fitness brand social media manager. "
+        "CRITICAL RULE: We only want to reply to a FEW high-value comments. "
+        "If the user's comment is just a single emoji, generic praise (e.g., 'fire', 'good video'), "
+        "or not a question, you MUST reply with EXACTLY the word: SKIP. "
+        "Only generate a reply if it's a question, a substantial comment, or a debate. "
+        "Keep replies very short (1-2 sentences) and encouraging."
+    )
 
     for post in recent_posts:
         media_id = post.get("ig_media_id")
@@ -282,17 +289,19 @@ def run_comment_engagement():
             continue
             
         comments = get_recent_comments(media_id)
-        for c in comments:
+        for c in comments[:5]: # Max 5 comments per post to avoid spamming
             username = c.get("username", "user")
             text = c.get("text", "")
             comment_id = c.get("id")
             
             try:
-                prompt = f"{sys_prompt}\n\nUser @{username} commented: '{text}'\n\nGenerate a short reply:"
+                prompt = f"{sys_prompt}\n\nUser @{username} commented: '{text}'\n\nReply (or output SKIP):"
                 resp = model.generate_content(prompt)
                 reply_text = resp.text.strip()
-                if reply_to_comment(comment_id, reply_text):
-                    replied_count += 1
+                
+                if reply_text.upper() != "SKIP" and reply_text != "":
+                    if reply_to_comment(comment_id, reply_text):
+                        replied_count += 1
             except Exception as e:
                 logger.error("Failed to generate/send reply for comment %s: %s", comment_id, e)
                 
