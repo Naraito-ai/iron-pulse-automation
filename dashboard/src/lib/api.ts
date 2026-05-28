@@ -2,6 +2,7 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const WS_URL   = process.env.NEXT_PUBLIC_WS_URL  || 'ws://localhost:8000/ws/live';
+export { API_BASE, WS_URL };
 
 export interface NewsStory {
   id: number;
@@ -30,6 +31,8 @@ export interface GeneratedPost {
   bullet_points: string[];
   slide_paths: string[];
   thumbnail_path: string;
+  reel_thumb_path?: string;
+  reel_thumb_url?: string;
   image_urls: string[];
   reel_url?: string;
   status: string;
@@ -54,6 +57,8 @@ export interface SystemStatus {
   brand_name: string;
   demo_mode: boolean;
   instagram_connected: boolean;
+  instagram_user_id?: string;
+  elevenlabs_configured?: boolean;
   scheduler_active: boolean;
   next_run_at: string;
   seconds_until_next: number;

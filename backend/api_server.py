@@ -124,6 +124,7 @@ async def ws_live(ws: WebSocket):
 async def get_status():
     """System status: scheduler, Instagram connection, demo mode."""
     from datetime import timedelta
+    import os
     now = datetime.now(TIMEZONE)
     next_run = now.replace(hour=SCHEDULE_HOUR, minute=SCHEDULE_MINUTE, second=0, microsecond=0)
     if next_run <= now:
@@ -133,17 +134,41 @@ async def get_status():
     run_history = db.get_run_history(limit=1)
     last_run = run_history[0] if run_history else None
 
+    # Check Instagram token validity via real API call
+    token = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
+    ig_connected = False
+    ig_user_id = ""
+    if token:
+        try:
+            import requests as _req
+            r = _req.get(
+                f"https://graph.facebook.com/me",
+                params={"access_token": token, "fields": "id,name"},
+                timeout=5
+            )
+            data = r.json()
+            if "id" in data and "error" not in data:
+                ig_connected = True
+                ig_user_id = data.get("id", "")
+        except Exception:
+            ig_connected = False
+
+    # Check ElevenLabs configured
+    elevenlabs_configured = bool(os.environ.get("ELEVENLABS_API_KEY", ""))
+
     return {
-        "brand_name":           BRAND_NAME,
-        "demo_mode":            DEMO_MODE,
-        "instagram_connected":  bool(__import__("config").INSTAGRAM_ACCESS_TOKEN),
-        "scheduler_active":     True,
-        "next_run_at":          next_run.isoformat(),
-        "seconds_until_next":   seconds_until,
-        "schedule_time":        f"{SCHEDULE_HOUR:02d}:{SCHEDULE_MINUTE:02d}",
-        "last_run":             last_run,
-        "ws_clients":           len(manager.active),
-        "server_time":          now.isoformat(),
+        "brand_name":               BRAND_NAME,
+        "demo_mode":                DEMO_MODE,
+        "instagram_connected":      ig_connected,
+        "instagram_user_id":        ig_user_id,
+        "elevenlabs_configured":    elevenlabs_configured,
+        "scheduler_active":         True,
+        "next_run_at":              next_run.isoformat(),
+        "seconds_until_next":       seconds_until,
+        "schedule_time":            f"{SCHEDULE_HOUR:02d}:{SCHEDULE_MINUTE:02d}",
+        "last_run":                 last_run,
+        "ws_clients":               len(manager.active),
+        "server_time":              now.isoformat(),
     }
 
 

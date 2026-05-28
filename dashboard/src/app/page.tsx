@@ -204,23 +204,47 @@ export default function Dashboard() {
         </div>
 
         {/* Status dots */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 24 }}>
           {[
-            { label: 'API Online',    ok: !loading },
-            { label: 'Instagram',     ok: status?.instagram_connected ?? false },
-            { label: `${livePublished.length} Live Posts`, ok: livePublished.length > 0 },
-          ].map(({ label, ok }) => (
+            { label: 'Backend API',    ok: !loading && !!status,                     icon: '🖥️' },
+            { label: 'Instagram',      ok: status?.instagram_connected ?? false,      icon: '📸', warning: !status?.instagram_connected && !loading },
+            { label: 'ElevenLabs AI', ok: status?.elevenlabs_configured ?? false,    icon: '🎙️' },
+            { label: 'Scheduler',     ok: status?.scheduler_active ?? false,         icon: '⏰' },
+            { label: `${livePublished.length} Posts Live`, ok: livePublished.length > 0, icon: '🚀' },
+          ].map(({ label, ok, icon, warning }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
               <div style={{
                 width: 7, height: 7, borderRadius: '50%',
-                background: ok ? '#00FF88' : '#333',
-                boxShadow: ok ? '0 0 6px #00FF88' : 'none',
+                background: ok ? '#00FF88' : (warning ? '#FF3250' : '#333'),
+                boxShadow: ok ? '0 0 6px #00FF88' : (warning ? '0 0 6px #FF3250' : 'none'),
                 flexShrink: 0,
               }} />
-              <span style={{ color: ok ? '#aaa' : '#444' }}>{label}</span>
+              <span style={{ color: ok ? '#aaa' : (warning ? '#FF3250' : '#444') }}>{icon} {label}</span>
             </div>
           ))}
         </div>
+
+        {/* Demo Mode Warning */}
+        {status?.demo_mode && (
+          <div style={{
+            background: '#FFB40015', border: '1px solid #FFB40040',
+            borderRadius: 8, padding: '8px 10px', marginBottom: 12,
+            fontSize: 10, color: '#FFB400', fontWeight: 700,
+          }}>
+            ⚠️ DEMO MODE — Posts are simulated. Set DEMO_MODE=false on Railway to go live.
+          </div>
+        )}
+
+        {/* Instagram Warning */}
+        {!loading && !status?.instagram_connected && (
+          <div style={{
+            background: '#FF325015', border: '1px solid #FF325040',
+            borderRadius: 8, padding: '8px 10px', marginBottom: 12,
+            fontSize: 10, color: '#FF3250', fontWeight: 700,
+          }}>
+            ❌ Instagram token invalid or expired. Update it below.
+          </div>
+        )}
 
         {/* Nav */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 'auto' }}>
