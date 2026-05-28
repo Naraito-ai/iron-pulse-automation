@@ -75,20 +75,18 @@ def _broadcast(level: str, module: str, message: str, run_date: str = ""):
 
 # ─── Pipeline ─────────────────────────────────────────────────────────────────
 
-def run_daily_pipeline():
+def run_daily_pregeneration():
     """
-    Full autonomous pipeline:
+    Full autonomous pipeline pre-generation (4:00 AM):
     1. Fetch top 5 AI news
-    2. Generate AI content (captions, hashtags, headlines)
-    3. Generate carousel images
-    4. Host images via local server
-    5. Publish to Instagram
-    6. Fetch analytics
+    2. Generate AI content
+    3. Generate carousel/reels
+    4. Host images & save to DB as 'draft'
     """
     run_date = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
     start_time = time.time()
 
-    _broadcast("INFO", "Orchestrator", f"🚀 Daily pipeline starting for {run_date}", run_date)
+    _broadcast("INFO", "Orchestrator", f"🚀 Daily Pre-generation starting for {run_date}", run_date)
     run_id = db.start_run(run_date)
 
     stats = {
@@ -99,99 +97,54 @@ def run_daily_pipeline():
     }
 
     try:
-        # ── Step 1: Fetch News ──────────────────────────────────────────────
+        # ── Step 1: Fetch News
         _broadcast("INFO", "NewsFetcher", "📡 Fetching latest AI news from multiple sources...", run_date)
         stories = fetch_top_ai_news()
         stats["stories_fetched"] = len(stories)
         story_ids = db.save_news_stories(run_date, stories)
         _broadcast("SUCCESS", "NewsFetcher", f"✅ Fetched {len(stories)} top AI stories", run_date)
 
-        # ── Step 2: Generate Content ────────────────────────────────────────
+        # ── Step 2: Generate Content
         _broadcast("INFO", "AIWriter", "✍️  Generating AI captions and content...", run_date)
         content_list = generate_all_content(stories)
         _broadcast("SUCCESS", "AIWriter", f"✅ Content generated for {len(content_list)} posts", run_date)
 
-        # ── Step 3: Generate Carousel Images ────────────────────────────────
-        _broadcast("INFO", "ImageEngine", "🎨 Rendering carousel slides...", run_date)
+        # ── Step 3: Generate Carousel Images
+        _broadcast("INFO", "ImageEngine", "🎨 Rendering carousels & reels...", run_date)
         content_list = generate_all_carousels(content_list, run_date)
-        _broadcast("SUCCESS", "ImageEngine", f"✅ Carousels & Reels generated for {len(content_list)} posts", run_date)
+        _broadcast("SUCCESS", "ImageEngine", f"✅ Media generated for {len(content_list)} posts", run_date)
 
-        # ── Step 4: Host Images & Videos ──────────────────────────────────────────────
+        # ── Step 4: Host Images & Save Drafts
         _broadcast("INFO", "ImageServer", "🌐 Generating public media URLs...", run_date)
         for i, content in enumerate(content_list):
             image_urls = get_image_urls(content.get("slide_paths", []))
             content["image_urls"] = image_urls
             
-            # Upload Reel
             reel_path = content.get("reel_path")
             if reel_path:
                 content["reel_url"] = get_reel_url(reel_path)
 
-            # Save to DB
             story_id = story_ids[i] if i < len(story_ids) else None
             post_id = db.save_generated_post(run_date, story_id, {
                 **content,
-                "rank": i + 1,
+                "rank": i,
             })
             content["db_post_id"] = post_id
 
         stats["posts_generated"] = len(content_list)
-        _broadcast("SUCCESS", "ImageServer", "✅ Media URLs ready", run_date)
+        _broadcast("SUCCESS", "ImageServer", "✅ Media URLs ready and Drafts saved", run_date)
 
-        # ── Step 5: Publish to Instagram ────────────────────────────────────
-        mode_tag = "[DEMO]" if DEMO_MODE else "[LIVE]"
-        carousel_count = sum(1 for c in content_list if c.get("post_format") == "carousel")
-        reel_count     = sum(1 for c in content_list if c.get("post_format") != "carousel")
-        _broadcast("INFO", "Publisher",
-                   f"📲 {mode_tag} Publishing {len(content_list)} posts "
-                   f"({reel_count} Reels + {carousel_count} Carousels)...", run_date)
-        _broadcast("INFO", "Publisher",
-                   "💡 TIP: After posting, open each Reel in Instagram and add a TRENDING SOUND for 3-5x more reach!", run_date)
-
-        published = publish_all_posts(content_list)
-        for pub in published:
-            db_post_id = pub.get("db_post_id")
-            ig_id      = pub.get("ig_media_id", "")
-            permalink  = pub.get("ig_permalink", "")
-            error      = pub.get("error", "")
-
-            db.save_published_post(db_post_id, ig_id, permalink, error)
-            db.update_post_status(db_post_id, "published" if ig_id else "failed")
-
-            if ig_id:
-                stats["posts_published"] += 1
-                _broadcast("SUCCESS", "Publisher",
-                           f"✅ Post #{pub.get('rank', '?')} published → {permalink or ig_id}", run_date)
-            else:
-                stats["error_count"] += 1
-                _broadcast("ERROR", "Publisher",
-                           f"❌ Post #{pub.get('rank', '?')} failed: {error}", run_date)
-
-        # ── Step 6: Analytics ────────────────────────────────────────────────
-        _broadcast("INFO", "Analytics", "📊 Fetching post analytics...", run_date)
-        poll_analytics_for_run(run_date)
-        _broadcast("SUCCESS", "Analytics", "✅ Analytics snapshot saved", run_date)
-
-        # ── Done ─────────────────────────────────────────────────────────────
         duration = round(time.time() - start_time, 1)
         stats["duration_seconds"] = duration
         db.finish_run(run_id, "completed", stats)
-
-        _broadcast("SUCCESS", "Orchestrator",
-                   f"🎉 Pipeline complete in {duration}s | "
-                   f"{stats['posts_published']}/{stats['posts_generated']} posts published", run_date)
-
-        if _ws_broadcast:
-            _ws_broadcast({"type": "pipeline_complete", "run_date": run_date, "stats": stats})
+        _broadcast("SUCCESS", "Orchestrator", f"🎉 Pre-generation complete in {duration}s", run_date)
 
     except Exception as e:
-        logger.exception("Pipeline failed: %s", e)
+        logger.exception("Pre-generation failed: %s", e)
         stats["error_count"] += 1
         stats["duration_seconds"] = round(time.time() - start_time, 1)
         db.finish_run(run_id, "failed", stats)
-        _broadcast("ERROR", "Orchestrator", f"💥 Pipeline failed: {e}", run_date)
-        if _ws_broadcast:
-            _ws_broadcast({"type": "pipeline_error", "error": str(e)})
+        _broadcast("ERROR", "Orchestrator", f"💥 Pre-generation failed: {e}", run_date)
 
 
 # ─── Staggered Post Times (IST) ─────────────────────────────────────────────
@@ -214,42 +167,44 @@ POST_SCHEDULE = [
 def run_single_post(rank: int):
     """
     Publish a single post by rank (0-4).
-    Called by the staggered scheduler at each peak time.
-    Generates content fresh if not already done today, or publishes pre-generated.
+    Checks if the draft is approved or pending. Rejects if user explicitly rejected.
     """
     run_date = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
     slot     = POST_SCHEDULE[rank]
     ctype    = slot["content_type"]
 
-    _broadcast("INFO", "Orchestrator",
-               f"⏰ Scheduled post #{rank+1} ({ctype}) starting...", run_date)
+    _broadcast("INFO", "Orchestrator", f"⏰ Scheduled post #{rank+1} ({ctype}) starting...", run_date)
 
     try:
         # Check token first
         token_info = check_and_refresh_token()
         if token_info["action"] == "expired":
-            _broadcast("ERROR", "Orchestrator",
-                       "🔴 Token expired — skipping post. Paste new token in dashboard.", run_date)
+            _broadcast("ERROR", "Orchestrator", "🔴 Token expired — skipping post.", run_date)
             return
 
-        # Run the full pipeline for this single slot
-        stories      = fetch_top_ai_news()
-        all_content  = generate_all_content(stories)
+        # Fetch draft from DB
+        drafts = db.get_generated_posts(run_date)
+        draft = next((d for d in drafts if d["rank"] == rank), None)
 
-        # Pick just this slot's content
-        content = all_content[rank % len(all_content)]
-        content = generate_all_carousels([content], run_date)[0]
+        if not draft:
+            _broadcast("ERROR", "Orchestrator", f"No draft found for post #{rank+1}. Did pre-gen run?", run_date)
+            return
+            
+        if draft["status"] == "rejected":
+            _broadcast("WARNING", "Orchestrator", f"Post #{rank+1} was REJECTED by user. Skipping.", run_date)
+            return
 
-        # Get public URLs
-        content["image_urls"] = get_image_urls(content.get("slide_paths", []))
-        reel_path = content.get("reel_path")
-        if reel_path:
-            content["reel_url"] = get_reel_url(reel_path)
+        _broadcast("INFO", "Orchestrator", f"Post #{rank+1} status is '{draft['status']}'. Proceeding to publish.", run_date)
 
-        # Save to DB
-        run_id  = db.start_run(run_date)
-        post_id = db.save_generated_post(run_date, None, {**content, "rank": rank + 1})
-        content["db_post_id"] = post_id
+        # We must format the draft back into the 'content' dict expected by publish_post
+        content = {
+            "db_post_id": draft["id"],
+            "headline": draft["headline"],
+            "caption": draft["caption"],
+            "image_urls": draft["image_urls"],
+            "reel_url": draft.get("reel_url", ""),
+            "post_format": "reel" if draft.get("reel_url") else "carousel"
+        }
 
         # Publish
         from instagram_publisher import publish_post
@@ -258,20 +213,13 @@ def run_single_post(rank: int):
         link    = result.get("ig_permalink", "")
         error   = result.get("error", "")
 
-        db.save_published_post(post_id, ig_id, link, error)
-        db.update_post_status(post_id, "published" if ig_id else "failed")
-        db.finish_run(run_id, "completed" if ig_id else "failed", {"posts_published": 1 if ig_id else 0})
+        db.save_published_post(draft["id"], ig_id, link, error)
+        db.update_post_status(draft["id"], "published" if ig_id else "failed")
 
         if ig_id:
-            _broadcast("SUCCESS", "Orchestrator",
-                       f"✅ [{ctype}] Post #{rank+1} live → {link}", run_date)
-            if slot["content_type"] in ("hot_take", "quick_tip", "meme_relatable"):
-                _broadcast("INFO", "Orchestrator",
-                           f"🎵 Open the Reel in Instagram app → tap ♪ → add a TRENDING SOUND for 5x more reach!",
-                           run_date)
+            _broadcast("SUCCESS", "Orchestrator", f"✅ [{ctype}] Post #{rank+1} live → {link}", run_date)
         else:
-            _broadcast("ERROR", "Orchestrator",
-                       f"❌ Post #{rank+1} failed: {error}", run_date)
+            _broadcast("ERROR", "Orchestrator", f"❌ Post #{rank+1} failed: {error}", run_date)
 
     except Exception as e:
         logger.exception("Single post %d failed: %s", rank, e)
@@ -280,6 +228,16 @@ def run_single_post(rank: int):
 
 def start_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone=TIMEZONE)
+
+    # ── 4:00 AM Daily Pre-Generation ─────────────────────────────────────────
+    scheduler.add_job(
+        run_daily_pregeneration,
+        trigger=CronTrigger(hour=4, minute=0, timezone=TIMEZONE),
+        id="daily_pregeneration",
+        name="Daily Pre-gen @ 4:00 AM IST",
+        replace_existing=True,
+    )
+    logger.info("  📅 Pre-generation scheduled at 04:00 IST")
 
     # ── 5 staggered daily posts at peak Instagram times ───────────────────────
     for slot in POST_SCHEDULE:
@@ -293,7 +251,7 @@ def start_scheduler() -> BackgroundScheduler:
             replace_existing=True,
             misfire_grace_time=1800,
         )
-        logger.info("  📅 Slot %d: %s at %02d:%02d IST", rank + 1, ctype, h, m)
+        logger.info("  📅 Publishing Slot %d: %s at %02d:%02d IST", rank + 1, ctype, h, m)
 
     # ── Analytics refresh every 6 hours ──────────────────────────────────────
     scheduler.add_job(
@@ -349,8 +307,8 @@ if __name__ == "__main__":
     start_image_server()
 
     if args.run_now:
-        logger.info("Running pipeline immediately (--run-now flag)")
-        run_daily_pipeline()
+        logger.info("Running pre-generation immediately (--run-now flag)")
+        run_daily_pregeneration()
 
     if not args.no_scheduler:
         scheduler = start_scheduler()

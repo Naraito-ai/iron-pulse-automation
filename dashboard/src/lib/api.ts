@@ -31,6 +31,7 @@ export interface GeneratedPost {
   slide_paths: string[];
   thumbnail_path: string;
   image_urls: string[];
+  reel_url?: string;
   status: string;
   created_at: string;
 }
@@ -96,6 +97,9 @@ export const api = {
   status:    () => apiFetch<SystemStatus>('/api/status'),
   news:      () => apiFetch<{ stories: NewsStory[]; count: number }>('/api/news'),
   posts:     () => apiFetch<{ posts: GeneratedPost[]; count: number }>('/api/posts'),
+  drafts:    () => apiFetch<{ drafts: GeneratedPost[]; count: number }>('/api/drafts'),
+  approveDraft: (id: number) => fetch(`${API_BASE}/api/drafts/${id}/approve`, { method: 'POST' }).then(r => r.json()),
+  rejectDraft:  (id: number) => fetch(`${API_BASE}/api/drafts/${id}/reject`, { method: 'POST' }).then(r => r.json()),
   published: () => apiFetch<{ published: unknown[]; count: number }>('/api/published'),
   analytics: () => apiFetch<AnalyticsSummary>('/api/analytics'),
   logs:      (limit = 100) => apiFetch<{ logs: LogEntry[]; count: number }>(`/api/logs?limit=${limit}`),

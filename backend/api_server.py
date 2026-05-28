@@ -191,13 +191,31 @@ async def get_history():
     return {"history": history}
 
 
+@app.get("/api/drafts")
+async def get_drafts():
+    """Today's pre-generated drafts pending approval."""
+    today = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+    posts = db.get_generated_posts(today)
+    drafts = [p for p in posts if p["status"] in ("draft", "approved", "rejected")]
+    return {"drafts": drafts, "count": len(drafts)}
+
+@app.post("/api/drafts/{post_id}/approve")
+async def approve_draft(post_id: int):
+    db.update_post_status(post_id, "approved")
+    return {"status": "success", "message": f"Draft {post_id} approved"}
+
+@app.post("/api/drafts/{post_id}/reject")
+async def reject_draft(post_id: int):
+    db.update_post_status(post_id, "rejected")
+    return {"status": "success", "message": f"Draft {post_id} rejected"}
+
 @app.post("/api/trigger")
 async def trigger_pipeline(background_tasks: BackgroundTasks):
-    """Manually trigger the pipeline."""
-    from main import run_daily_pipeline
-    logger.info("Manual pipeline trigger via API")
-    background_tasks.add_task(run_daily_pipeline)
-    return {"status": "triggered", "message": "Pipeline starting in background..."}
+    """Manually trigger the pre-generation pipeline."""
+    from main import run_daily_pregeneration
+    logger.info("Manual pre-generation trigger via API")
+    background_tasks.add_task(run_daily_pregeneration)
+    return {"status": "triggered", "message": "Pre-generation starting in background..."}
 
 
 @app.get("/api/images/thumbnails")

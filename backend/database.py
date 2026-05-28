@@ -62,7 +62,8 @@ def init_db():
             slide_paths     TEXT,
             thumbnail_path  TEXT,
             image_urls      TEXT,
-            status          TEXT DEFAULT 'pending',
+            reel_url        TEXT,
+            status          TEXT DEFAULT 'draft',
             created_at      TEXT DEFAULT (datetime('now'))
         );
 
@@ -162,8 +163,8 @@ def save_generated_post(run_date: str, story_id: int, data: dict) -> int:
         cur = conn.execute("""
             INSERT INTO generated_posts
                 (run_date, story_id, rank, headline, subheadline, caption,
-                 hashtags, cta, bullet_points, slide_paths, thumbnail_path, image_urls, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 hashtags, cta, bullet_points, slide_paths, thumbnail_path, image_urls, reel_url, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             run_date, story_id, data.get("rank", 0),
             data.get("headline", ""), data.get("subheadline", ""),
@@ -173,7 +174,8 @@ def save_generated_post(run_date: str, story_id: int, data: dict) -> int:
             json.dumps(data.get("slide_paths", [])),
             data.get("thumbnail_path", ""),
             json.dumps(data.get("image_urls", [])),
-            "generated",
+            data.get("reel_url", ""),
+            "draft",
         ))
         return cur.lastrowid
 

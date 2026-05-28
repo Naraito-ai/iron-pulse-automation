@@ -23,7 +23,7 @@ interface TokenStatus {
   expires_at?: string;
 }
 
-type Section = 'overview' | 'published' | 'analytics' | 'logs';
+type Section = 'overview' | 'drafts' | 'published' | 'analytics' | 'logs';
 
 const CONTENT_TYPE_META: Record<string, { icon: string; label: string; color: string }> = {
   hot_take:       { icon: '🔥', label: 'Hot Take',      color: '#FF4444' },
@@ -56,6 +56,7 @@ export default function Dashboard() {
   const [status,      setStatus]      = useState<SystemStatus | null>(null);
   const [analytics,   setAnalytics]   = useState<AnalyticsSummary | null>(null);
   const [logs,        setLogs]        = useState<LogEntry[]>([]);
+  const [drafts,      setDrafts]      = useState<any[]>([]);
   const [published,   setPublished]   = useState<PublishedPost[]>([]);
   const [tokenStatus, setTokenStatus] = useState<TokenStatus | null>(null);
   const [loading,     setLoading]     = useState(true);
@@ -68,17 +69,20 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [sRes, aRes, lRes, pRes, tRes] = await Promise.allSettled([
+      const [sRes, aRes, lRes, pRes, tRes, dRes] = await Promise.allSettled([
         api.status(),
         api.analytics(),
         api.logs(120),
         fetch('/api/published').then(r => r.json()),
         fetch('/api/token-status').then(r => r.json()),
+        api.drafts(),
       ]);
       if (sRes.status === 'fulfilled') setStatus(sRes.value);
       if (aRes.status === 'fulfilled') setAnalytics(aRes.value);
       if (lRes.status === 'fulfilled') setLogs(lRes.value.logs);
       if (pRes.status === 'fulfilled') setPublished((pRes.value as any).published ?? []);
+      if (tRes.status === 'fulfilled') setTokenStatus(tRes.value);
+      if (dRes.status === 'fulfilled') setDrafts(dRes.value.drafts ?? []);
       if (tRes.status === 'fulfilled') setTokenStatus(tRes.value);
     } finally { setLoading(false); }
   }, []);
@@ -156,6 +160,7 @@ export default function Dashboard() {
 
   const NAV: { id: Section; icon: string; label: string }[] = [
     { id: 'overview',  icon: '🏠', label: 'Overview'  },
+    { id: 'drafts',    icon: '📝', label: 'Today\'s Drafts' },
     { id: 'published', icon: '📸', label: 'Published Posts' },
     { id: 'analytics', icon: '📊', label: 'Analytics' },
     { id: 'logs',      icon: '📋', label: 'Live Logs' },
@@ -285,6 +290,7 @@ export default function Dashboard() {
         {loading ? <LoadingScreen /> : (
           <>
             {section === 'overview'  && <OverviewSection status={status} analytics={analytics} published={published} livePublished={livePublished} successRate={successRate} />}
+            {section === 'drafts'    && <DraftsSection drafts={drafts} onUpdate={loadData} />}
             {section === 'published' && <PublishedSection published={published} />}
             {section === 'analytics' && <AnalyticsSection analytics={analytics} />}
             {section === 'logs'      && <LogsSection logs={logs} logsRef={logsRef} />}
@@ -641,6 +647,97 @@ function LogsSection({ logs, logsRef }: { logs: LogEntry[]; logsRef: React.RefOb
         )}
       </div>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+    </div>
+  );
+}
+
+// ─── Drafts ──────────────────────────────────────────────────────────────────
+function DraftsSection({ drafts, onUpdate }: { drafts: any[]; onUpdate: () => void }) {
+  const handleApprove = async (id: number) => {
+    await api.approveDraft(id);
+    onUpdate();
+  };
+  const handleReject = async (id: number) => {
+    await api.rejectDraft(id);
+    onUpdate();
+  };
+
+  const pendingCount = drafts.filter(d => d.status === 'draft').length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div>
+        <h1 style={{ fontSize: 26, fontWeight: 900, margin: 0 }}>📝 Today's Drafts</h1>
+        <p style={{ color: '#444', fontSize: 13, margin: '6px 0 0' }}>{pendingCount} awaiting approval (Auto-publishes if ignored)</p>
+      </div>
+
+      {drafts.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#333' }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: '#555' }}>No drafts available</div>
+          <div style={{ fontSize: 13 }}>Drafts are generated automatically at 4:00 AM. Click "Run Now" to trigger them immediately.</div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          {drafts.map((draft, i) => {
+            const isApproved = draft.status === 'approved';
+            const isRejected = draft.status === 'rejected';
+            const isReel = !!draft.reel_url;
+            return (
+              <div key={draft.id} style={{
+                background: '#111', border: `1px solid ${isApproved ? '#00FF8850' : isRejected ? '#FF325050' : '#1a1a1a'}`,
+                borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+              }}>
+                {/* Media Preview */}
+                <div style={{ height: 200, background: '#000', position: 'relative' }}>
+                  {isReel ? (
+                    <video src={`${API_BASE}${draft.reel_url}`} autoPlay loop muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <img src={`${API_BASE}${draft.image_urls[0]}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
+                  <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.7)', padding: '4px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, color: '#fff' }}>
+                    {isReel ? '🎬 REEL' : '🖼️ CAROUSEL'}
+                  </div>
+                  <div style={{ position: 'absolute', top: 10, right: 10, background: isApproved ? '#00FF88' : isRejected ? '#FF3250' : '#FFB400', color: '#000', padding: '4px 8px', borderRadius: 6, fontSize: 10, fontWeight: 900, textTransform: 'uppercase' }}>
+                    {draft.status}
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div style={{ padding: 16, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <div style={{ fontSize: 10, color: '#888', fontWeight: 700, marginBottom: 4 }}>POST #{draft.rank + 1} SLOT</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#eee', marginBottom: 8 }}>{draft.headline}</div>
+                  <div style={{ fontSize: 12, color: '#888', flex: 1, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {draft.caption}
+                  </div>
+
+                  {/* Actions */}
+                  {draft.status === 'draft' && (
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button onClick={() => handleApprove(draft.id)} style={{ flex: 1, padding: '10px', background: '#00FF8820', color: '#00FF88', border: '1px solid #00FF8850', borderRadius: 8, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        ✓ Approve
+                      </button>
+                      <button onClick={() => handleReject(draft.id)} style={{ flex: 1, padding: '10px', background: '#FF325020', color: '#FF3250', border: '1px solid #FF325050', borderRadius: 8, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        ✕ Reject
+                      </button>
+                    </div>
+                  )}
+                  {isApproved && (
+                    <div style={{ textAlign: 'center', padding: '10px', background: '#00FF8810', color: '#00FF88', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+                      Will be published automatically
+                    </div>
+                  )}
+                  {isRejected && (
+                    <div style={{ textAlign: 'center', padding: '10px', background: '#FF325010', color: '#FF3250', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+                      Will be skipped
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
