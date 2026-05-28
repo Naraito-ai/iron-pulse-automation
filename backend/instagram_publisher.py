@@ -249,3 +249,32 @@ def publish_all_posts(content_list: list[dict]) -> list[dict]:
         if i < len(content_list) - 1:
             time.sleep(8)  # Rate limit buffer
     return results
+
+
+# ─── Comment Engagement ───────────────────────────────────────────────────────
+
+def get_recent_comments(media_id: str) -> list[dict]:
+    """Fetch recent comments for a specific Instagram media ID."""
+    if DEMO_MODE or not _get_token() or not INSTAGRAM_USER_ID:
+        return []
+    try:
+        data = _api_get(f"{media_id}/comments", {"fields": "id,text,username,timestamp,replies"})
+        # Filter out comments that already have replies from us (basic check)
+        comments = data.get("data", [])
+        return [c for c in comments if not c.get("replies")]
+    except Exception as e:
+        logger.error("Failed to fetch comments for media %s: %s", media_id, e)
+        return []
+
+def reply_to_comment(comment_id: str, text: str) -> bool:
+    """Reply to an Instagram comment."""
+    if DEMO_MODE or not _get_token() or not INSTAGRAM_USER_ID:
+        logger.info("[DEMO] Simulated reply to comment %s: %s", comment_id, text)
+        return True
+    try:
+        data = _api_post(f"{comment_id}/replies", {"message": text})
+        logger.info("✅ Replied to comment %s: %s", comment_id, text)
+        return True
+    except Exception as e:
+        logger.error("❌ Failed to reply to comment %s: %s", comment_id, e)
+        return False

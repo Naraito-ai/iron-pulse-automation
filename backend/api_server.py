@@ -209,6 +209,26 @@ async def reject_draft(post_id: int):
     db.update_post_status(post_id, "rejected")
     return {"status": "success", "message": f"Draft {post_id} rejected"}
 
+@app.put("/api/drafts/{post_id}")
+async def edit_draft(post_id: int, body: dict):
+    """Update draft content directly."""
+    allowed_keys = {"headline", "caption", "hashtags"}
+    updates = {k: v for k, v in body.items() if k in allowed_keys}
+    if updates:
+        db.update_draft_content(post_id, updates)
+    return {"status": "success"}
+
+@app.post("/api/generate-custom")
+async def generate_custom(body: dict, background_tasks: BackgroundTasks):
+    """Manually generate a post from a custom prompt."""
+    prompt = body.get("prompt")
+    if not prompt:
+        return JSONResponse(status_code=400, content={"error": "Prompt required"})
+    from main import run_custom_post
+    logger.info("Custom post trigger via API: %s", prompt)
+    background_tasks.add_task(run_custom_post, prompt)
+    return {"status": "triggered", "message": "Custom post generation started..."}
+
 @app.post("/api/trigger")
 async def trigger_pipeline(background_tasks: BackgroundTasks):
     """Manually trigger the pre-generation pipeline."""

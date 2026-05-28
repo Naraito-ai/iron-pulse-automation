@@ -653,12 +653,37 @@ function LogsSection({ logs, logsRef }: { logs: LogEntry[]; logsRef: React.RefOb
 
 // ─── Drafts ──────────────────────────────────────────────────────────────────
 function DraftsSection({ drafts, onUpdate }: { drafts: any[]; onUpdate: () => void }) {
+  const [prompt, setPrompt] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editData, setEditData] = useState({ headline: '', caption: '' });
+
   const handleApprove = async (id: number) => {
     await api.approveDraft(id);
     onUpdate();
   };
   const handleReject = async (id: number) => {
     await api.rejectDraft(id);
+    onUpdate();
+  };
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    setGenerating(true);
+    try {
+      await api.generateCustom(prompt);
+      setPrompt('');
+      setTimeout(onUpdate, 5000);
+    } finally {
+      setGenerating(false);
+    }
+  };
+  const startEditing = (draft: any) => {
+    setEditingId(draft.id);
+    setEditData({ headline: draft.headline || '', caption: draft.caption || '' });
+  };
+  const saveEditing = async (id: number) => {
+    await api.editDraft(id, editData);
+    setEditingId(null);
     onUpdate();
   };
 
@@ -669,6 +694,20 @@ function DraftsSection({ drafts, onUpdate }: { drafts: any[]; onUpdate: () => vo
       <div>
         <h1 style={{ fontSize: 26, fontWeight: 900, margin: 0 }}>📝 Today's Drafts</h1>
         <p style={{ color: '#444', fontSize: 13, margin: '6px 0 0' }}>{pendingCount} awaiting approval (Auto-publishes if ignored)</p>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, background: '#111', padding: '16px', borderRadius: 14, border: '1px solid #1a1a1a' }}>
+        <input 
+          value={prompt} onChange={e => setPrompt(e.target.value)} 
+          placeholder="Enter a custom prompt (e.g. 'Benefits of creatine vs whey')..." 
+          style={{ flex: 1, background: '#0a0a0a', border: '1px solid #222', padding: '12px 16px', borderRadius: 8, color: '#fff', fontSize: 14 }}
+        />
+        <button 
+          onClick={handleGenerate} disabled={generating || !prompt.trim()}
+          style={{ background: 'linear-gradient(135deg, #FF5500, #FF0080)', color: '#fff', border: 'none', padding: '0 24px', borderRadius: 8, fontWeight: 700, cursor: generating ? 'not-allowed' : 'pointer', opacity: generating ? 0.7 : 1 }}
+        >
+          {generating ? 'Generating...' : '✨ Generate Post'}
+        </button>
       </div>
 
       {drafts.length === 0 ? (
@@ -705,11 +744,30 @@ function DraftsSection({ drafts, onUpdate }: { drafts: any[]; onUpdate: () => vo
 
                 {/* Content */}
                 <div style={{ padding: 16, display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ fontSize: 10, color: '#888', fontWeight: 700, marginBottom: 4 }}>POST #{draft.rank + 1} SLOT</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#eee', marginBottom: 8 }}>{draft.headline}</div>
-                  <div style={{ fontSize: 12, color: '#888', flex: 1, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {draft.caption}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <div style={{ fontSize: 10, color: '#888', fontWeight: 700 }}>POST #{draft.rank === 999 ? 'CUSTOM' : draft.rank + 1}</div>
+                    {draft.status === 'draft' && editingId !== draft.id && (
+                      <button onClick={() => startEditing(draft)} style={{ background: 'transparent', border: 'none', color: '#00CFFF', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✏️ Edit</button>
+                    )}
                   </div>
+                  
+                  {editingId === draft.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, flex: 1 }}>
+                      <input value={editData.headline} onChange={e => setEditData({...editData, headline: e.target.value})} style={{ background: '#000', border: '1px solid #333', color: '#fff', padding: '8px', borderRadius: 6, fontSize: 13, fontWeight: 700 }} />
+                      <textarea value={editData.caption} onChange={e => setEditData({...editData, caption: e.target.value})} style={{ background: '#000', border: '1px solid #333', color: '#fff', padding: '8px', borderRadius: 6, fontSize: 12, flex: 1, resize: 'none' }} />
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={() => saveEditing(draft.id)} style={{ flex: 1, background: '#00CFFF20', color: '#00CFFF', border: '1px solid #00CFFF50', padding: '6px', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                        <button onClick={() => setEditingId(null)} style={{ flex: 1, background: '#333', color: '#fff', border: 'none', padding: '6px', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#eee', marginBottom: 8 }}>{draft.headline}</div>
+                      <div style={{ fontSize: 12, color: '#888', flex: 1, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {draft.caption}
+                      </div>
+                    </>
+                  )}
 
                   {/* Actions */}
                   {draft.status === 'draft' && (

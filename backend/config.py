@@ -52,6 +52,8 @@ AI_KEYWORDS = [
 AI_PROVIDER   = os.getenv("AI_PROVIDER", "gemini")   # gemini | openai
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6obpgDQGcFmaJcg") # Default voice Adam
 
 # ─── Instagram / Meta ─────────────────────────────────────────────────────────
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN", "")

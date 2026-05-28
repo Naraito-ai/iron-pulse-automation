@@ -210,6 +210,38 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
     return overlay_path
 
 
+def _fetch_tts_audio(text: str, output_path: str) -> bool:
+    """Fetch AI voiceover from ElevenLabs if API key is present."""
+    from config import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID
+    import requests
+    if not ELEVENLABS_API_KEY:
+        return False
+    try:
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVENLABS_API_KEY
+        }
+        data = {
+            "text": text,
+            "model_id": "eleven_monolingual_v1",
+            "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}
+        }
+        logger.info("Fetching ElevenLabs voiceover...")
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code == 200:
+            with open(output_path, "wb") as f:
+                f.write(response.content)
+            return True
+        else:
+            logger.error("ElevenLabs error: %s", response.text)
+            return False
+    except Exception as e:
+        logger.error("TTS fetch failed: %s", e)
+        return False
+
+
 def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None) -> str:
     """
     Generate a cinematic fitness Reel:
@@ -353,34 +385,59 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
 
     silent_video = GENERATED_DIR / f"{slug}_silent.mp4"
     
+    # Check for ElevenLabs TTS
+    tts_audio_path = str(GENERATED_DIR / f"{slug}_tts.mp3")
+    script_text = ""
+    if content:
+        script_text = f"{content.get('headline', '')}. " + ". ".join(content.get('bullet_points', [])) + f". {content.get('stat_highlight', '')}"
+    
+    has_tts = False
+    if script_text:
+        has_tts = _fetch_tts_audio(script_text, tts_audio_path)
+
     music_dir = Path(__file__).parent / "assets/music"
     songs = list(music_dir.glob("*.mp3"))
-    if not songs:
-        music_arg = ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
+    
+    if has_tts:
+        # Mix TTS with gym beat (gym beat at 10% volume)
+        if songs:
+            music_path = str(random.choice(songs))
+            subprocess.run([
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                "-i", str(concat_file),
+                "-i", tts_audio_path,
+                "-stream_loop", "-1", "-i", music_path,
+                "-filter_complex", "[2:a]volume=0.1[bgm];[1:a][bgm]amix=inputs=2:duration=first[a]",
+                "-map", "0:v", "-map", "[a]",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(video_path),
+            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            subprocess.run([
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                "-i", str(concat_file),
+                "-i", tts_audio_path,
+                "-map", "0:v", "-map", "1:a",
+                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(video_path),
+            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logger.info("Reel saved with AI Voiceover")
     else:
-        music_path = str(random.choice(songs))
-        music_arg = ["-stream_loop", "-1", "-i", music_path]
-
-    subprocess.run([
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-        "-i", str(concat_file), 
-        *music_arg,
-        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(silent_video),
-    ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    # ── NO background music — keep reel silent so Instagram allows trending audio ──
-    # Instagram only lets you add trending sounds to reels that have NO baked-in audio.
-    # Adding trending sounds in the app gives 3-5x more reach via the algorithm boost.
-    shutil.copy(str(silent_video), str(video_path))
-    logger.info("Reel saved silent — add trending sound in Instagram app for max reach")
+        # Keep silent for trending audio
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+            "-i", str(concat_file), 
+            "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(video_path),
+        ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logger.info("Reel saved silent — add trending sound in Instagram app for max reach")
 
     # ── Cleanup + return ──────────────────────────────────────────────────────
     for cp in tmp_clips:
         try: os.remove(cp)
         except Exception: pass
-    for f in [str(silent_video), str(concat_file)]:
-        try: os.remove(f)
-        except Exception: pass
+    for f in [str(concat_file), tts_audio_path if has_tts else ""]:
+        if f:
+            try: os.remove(f)
+            except Exception: pass
 
     # ── Generate reel thumbnail from the primary background + slide 1 overlay ─
     reel_thumb_path = str(GENERATED_DIR / f"{slug}_reel_thumb.jpg")

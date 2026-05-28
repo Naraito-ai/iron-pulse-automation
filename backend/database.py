@@ -207,6 +207,13 @@ def update_post_status(post_id: int, status: str):
     with get_db() as conn:
         conn.execute("UPDATE generated_posts SET status=? WHERE id=?", (status, post_id))
 
+def update_draft_content(post_id: int, updates: dict):
+    with get_db() as conn:
+        set_clause = ", ".join([f"{k}=?" for k in updates.keys()])
+        values = list(updates.values())
+        values.append(post_id)
+        conn.execute(f"UPDATE generated_posts SET {set_clause} WHERE id=?", tuple(values))
+
 
 # ─── Published Posts ──────────────────────────────────────────────────────────
 

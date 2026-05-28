@@ -164,7 +164,38 @@ POST_SCHEDULE = [
 ]
 
 
-def run_single_post(rank: int):
+def run_custom_post(prompt: str):
+    """Bypasses news and generates a single custom post immediately."""
+    run_date = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+    db.log_event("INFO", "main", f"🚀 Generating custom post: {prompt[:30]}...")
+
+    story = {
+        "title": prompt,
+        "summary": "Custom prompt by user",
+        "source": "Custom",
+        "url": "",
+        "published_at": run_date,
+        "rank": 999
+    }
+    story_ids = db.save_news_stories(run_date, [story])
+    story_id = story_ids[0]
+
+    try:
+        content = ai.generate_fitness_content(story, rank=999)
+        db.log_event("INFO", "main", f"Custom post content generated")
+        
+        post_data = img.generate_carousel(content, story, 999, run_date)
+        post_data.update(content)
+        post_data["rank"] = 999
+        
+        post_id = db.save_generated_post(run_date, story_id, post_data)
+        db.log_event("SUCCESS", "main", f"✅ Custom post {post_id} saved to drafts")
+    except Exception as e:
+        logger.error(f"Custom post failed: {e}")
+        db.log_event("ERROR", "main", f"❌ Custom post failed: {str(e)}")
+
+
+def run_single_post(rank: int, scheduled_time: str):
     """
     Publish a single post by rank (0-4).
     Checks if the draft is approved or pending. Rejects if user explicitly rejected.
@@ -226,6 +257,49 @@ def run_single_post(rank: int):
         _broadcast("ERROR", "Orchestrator", f"💥 Post #{rank+1} error: {e}", run_date)
 
 
+def run_comment_engagement():
+    """Polls recent posts for new comments and uses Gemini to automatically reply."""
+    from instagram_publisher import get_recent_comments, reply_to_comment
+    from ai_writer import get_gemini_client
+    import google.generativeai as genai
+    
+    _broadcast("INFO", "Engagement", "Checking for new comments to reply to...")
+    
+    # Get last 3 published posts
+    recent_posts = db.get_published_posts(limit=3)
+    replied_count = 0
+    
+    genai_client = get_gemini_client()
+    if not genai_client:
+        return
+        
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    sys_prompt = "You are the Iron Pulse fitness brand social media manager. Keep replies very short (1-2 sentences), hype the user up, be encouraging, and use 1-2 emojis. If the comment is a question, answer it concisely."
+
+    for post in recent_posts:
+        media_id = post.get("ig_media_id")
+        if not media_id:
+            continue
+            
+        comments = get_recent_comments(media_id)
+        for c in comments:
+            username = c.get("username", "user")
+            text = c.get("text", "")
+            comment_id = c.get("id")
+            
+            try:
+                prompt = f"{sys_prompt}\n\nUser @{username} commented: '{text}'\n\nGenerate a short reply:"
+                resp = model.generate_content(prompt)
+                reply_text = resp.text.strip()
+                if reply_to_comment(comment_id, reply_text):
+                    replied_count += 1
+            except Exception as e:
+                logger.error("Failed to generate/send reply for comment %s: %s", comment_id, e)
+                
+    if replied_count > 0:
+        _broadcast("SUCCESS", "Engagement", f"✅ Automatically replied to {replied_count} comments!")
+
+
 def start_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone=TIMEZONE)
 
@@ -275,6 +349,15 @@ def start_scheduler() -> BackgroundScheduler:
         trigger=CronTrigger(hour=8, minute=0, timezone=TIMEZONE),
         id="token_check",
         name="Daily Token Health Check",
+        replace_existing=True,
+    )
+    
+    # ── Automated Comment Replies (Every 15 mins) ─────────────────────────────
+    scheduler.add_job(
+        run_comment_engagement,
+        trigger=CronTrigger(minute="*/15", timezone=TIMEZONE),
+        id="comment_engagement",
+        name="Comment Auto-Replies",
         replace_existing=True,
     )
 

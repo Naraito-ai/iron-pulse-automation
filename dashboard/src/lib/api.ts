@@ -100,6 +100,8 @@ export const api = {
   drafts:    () => apiFetch<{ drafts: GeneratedPost[]; count: number }>('/api/drafts'),
   approveDraft: (id: number) => fetch(`${API_BASE}/api/drafts/${id}/approve`, { method: 'POST' }).then(r => r.json()),
   rejectDraft:  (id: number) => fetch(`${API_BASE}/api/drafts/${id}/reject`, { method: 'POST' }).then(r => r.json()),
+  editDraft:    (id: number, data: { headline: string; caption: string }) => fetch(`${API_BASE}/api/drafts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(r => r.json()),
+  generateCustom: (prompt: string) => fetch(`${API_BASE}/api/generate-custom`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ prompt }) }).then(r => r.json()),
   published: () => apiFetch<{ published: unknown[]; count: number }>('/api/published'),
   analytics: () => apiFetch<AnalyticsSummary>('/api/analytics'),
   logs:      (limit = 100) => apiFetch<{ logs: LogEntry[]; count: number }>(`/api/logs?limit=${limit}`),
