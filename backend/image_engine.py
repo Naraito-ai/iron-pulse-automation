@@ -352,11 +352,19 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
             f.write(f"file '{cp.replace(chr(92), '/')}'\n")
 
     silent_video = GENERATED_DIR / f"{slug}_silent.mp4"
-    music_path = str(Path(__file__).parent / "assets/music/gym_beat.mp3")
+    
+    music_dir = Path(__file__).parent / "assets/music"
+    songs = list(music_dir.glob("*.mp3"))
+    if not songs:
+        music_arg = ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
+    else:
+        music_path = str(random.choice(songs))
+        music_arg = ["-stream_loop", "-1", "-i", music_path]
+
     subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0",
         "-i", str(concat_file), 
-        "-stream_loop", "-1", "-i", music_path,
+        *music_arg,
         "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(silent_video),
     ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
