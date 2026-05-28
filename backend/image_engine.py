@@ -163,7 +163,7 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw    = ImageDraw.Draw(overlay)
 
-    scrim_y = int(H * 0.62)
+    scrim_y = int(H * 0.40)
 
     # Gradient scrim: fade from transparent to black
     for y in range(scrim_y, H):
@@ -174,8 +174,8 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
     # Orange accent bar
     draw.rectangle([(0, scrim_y), (W, scrim_y + 8)], fill=(255, 80, 0, 255))
 
-    font_title  = _load_font(72, bold=True)
-    font_body   = _load_font(48)
+    font_title  = _load_font(90, bold=True)
+    font_body   = _load_font(54)
     font_badge  = _load_font(36, bold=True)
 
     # Title — centered, white
@@ -354,7 +354,9 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
     silent_video = GENERATED_DIR / f"{slug}_silent.mp4"
     subprocess.run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-        "-i", str(concat_file), "-c", "copy", str(silent_video),
+        "-i", str(concat_file), 
+        "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+        "-c:v", "copy", "-c:a", "aac", "-shortest", str(silent_video),
     ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # ── NO background music — keep reel silent so Instagram allows trending audio ──
