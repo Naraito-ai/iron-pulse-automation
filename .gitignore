@@ -1,0 +1,15 @@
+.env
+*.log
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+backend/data/
+backend/assets/generated/
+backend/assets/thumbnails/
+backend/assets/music/
+node_modules/
+.next/
+dashboard/.next/
+*.mp4
+*.db
