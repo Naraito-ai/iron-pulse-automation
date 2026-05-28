@@ -63,8 +63,9 @@ def _wait_for_container(container_id: str) -> bool:
         logger.debug("Container %s status: %s (attempt %d)", container_id, status, attempt + 1)
         if status == "FINISHED":
             return True
-        elif status in ("ERROR", "EXPIRED"):
+        elif status == "EXPIRED":
             raise RuntimeError(f"Container {container_id} failed: {status}")
+        # Meta API sometimes temporarily returns ERROR while downloading the video or doing virus scans, so we keep polling.
         time.sleep(POLL_INTERVAL_SECONDS)
     raise TimeoutError(f"Container {container_id} timed out")
 
