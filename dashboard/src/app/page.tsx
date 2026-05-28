@@ -750,7 +750,12 @@ function DraftsSection({ drafts, onUpdate }: { drafts: any[]; onUpdate: () => vo
                 {/* Media Preview */}
                 <div style={{ height: 200, background: '#000', position: 'relative' }}>
                   {isReel ? (
-                    <video src={`${API_BASE}${draft.reel_url}`} autoPlay loop muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <video 
+                      src={`${API_BASE}${draft.reel_url}`} 
+                      poster={draft.reel_thumb_url || undefined}
+                      autoPlay loop muted 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                   ) : (
                     <img src={`${API_BASE}${draft.image_urls[0]}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   )}
@@ -760,6 +765,17 @@ function DraftsSection({ drafts, onUpdate }: { drafts: any[]; onUpdate: () => vo
                   <div style={{ position: 'absolute', top: 10, right: 10, background: isApproved ? '#00FF88' : isRejected ? '#FF3250' : '#FFB400', color: '#000', padding: '4px 8px', borderRadius: 6, fontSize: 10, fontWeight: 900, textTransform: 'uppercase' }}>
                     {draft.status}
                   </div>
+                  {isReel && (
+                    <div style={{
+                      position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      padding: '5px 14px', borderRadius: 20,
+                      fontSize: 10, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap',
+                    }}>
+                      🎵 Add Trending Audio for 5× Reach
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}

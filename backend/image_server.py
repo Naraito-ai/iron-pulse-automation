@@ -96,3 +96,12 @@ def get_reel_url(reel_path: str) -> str:
         from config import IMAGE_HOST_URL
         filename = Path(reel_path).name
         return f"{IMAGE_HOST_URL}/generated/{filename}"
+
+
+def get_reel_thumb_url(thumb_path: str) -> str:
+    """Return a public URL for the reel thumbnail JPEG (served via local image server)."""
+    if not thumb_path:
+        return ""
+    from config import IMAGE_HOST_URL
+    filename = Path(thumb_path).name
+    return f"{IMAGE_HOST_URL}/generated/{filename}"

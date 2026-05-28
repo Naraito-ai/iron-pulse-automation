@@ -22,7 +22,7 @@ import database as db
 from news_fetcher import fetch_top_ai_news
 from ai_writer import generate_all_content
 from image_engine import generate_all_carousels, download_fonts
-from image_server import start_image_server, get_image_urls, get_reel_url
+from image_server import start_image_server, get_image_urls, get_reel_url, get_reel_thumb_url
 from instagram_publisher import publish_all_posts
 from analytics import poll_analytics_for_run
 from token_refresher import check_and_refresh_token
@@ -121,8 +121,13 @@ def run_daily_pregeneration():
             content["image_urls"] = image_urls
             
             reel_path = content.get("reel_path")
+            reel_thumb = content.get("reel_thumb_path", "")
             if reel_path:
                 content["reel_url"] = get_reel_url(reel_path)
+            if reel_thumb:
+                content["reel_thumb_url"] = get_reel_thumb_url(reel_thumb)
+            else:
+                content["reel_thumb_url"] = ""
 
             story_id = story_ids[i] if i < len(story_ids) else None
             post_id = db.save_generated_post(run_date, story_id, {
@@ -195,8 +200,13 @@ def run_custom_post(prompt: str):
         image_urls = get_image_urls(post_data.get("slide_paths", []))
         post_data["image_urls"] = image_urls
         reel_path = post_data.get("reel_path")
+        reel_thumb = post_data.get("reel_thumb_path", "")
         if reel_path:
             post_data["reel_url"] = get_reel_url(reel_path)
+        if reel_thumb:
+            post_data["reel_thumb_url"] = get_reel_thumb_url(reel_thumb)
+        else:
+            post_data["reel_thumb_url"] = ""
 
         post_id = db.save_generated_post(run_date, story_id, post_data)
         _broadcast("SUCCESS", "Custom", f"✅ Custom post #{post_id} saved to Drafts!", run_date)

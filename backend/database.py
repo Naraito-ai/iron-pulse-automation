@@ -61,6 +61,7 @@ def init_db():
             bullet_points   TEXT,
             slide_paths     TEXT,
             thumbnail_path  TEXT,
+            reel_thumb_path TEXT,
             image_urls      TEXT,
             reel_url        TEXT,
             status          TEXT DEFAULT 'draft',
@@ -160,11 +161,17 @@ def get_latest_news(run_date: str = None) -> list[dict]:
 
 def save_generated_post(run_date: str, story_id: int, data: dict) -> int:
     with get_db() as conn:
+        # Add reel_thumb_path column if it doesn't exist (migration)
+        try:
+            conn.execute("ALTER TABLE generated_posts ADD COLUMN reel_thumb_path TEXT DEFAULT ''")
+        except Exception:
+            pass  # Column already exists
         cur = conn.execute("""
             INSERT INTO generated_posts
                 (run_date, story_id, rank, headline, subheadline, caption,
-                 hashtags, cta, bullet_points, slide_paths, thumbnail_path, image_urls, reel_url, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 hashtags, cta, bullet_points, slide_paths, thumbnail_path,
+                 reel_thumb_path, image_urls, reel_url, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             run_date, story_id, data.get("rank", 0),
             data.get("headline", ""), data.get("subheadline", ""),
@@ -173,6 +180,7 @@ def save_generated_post(run_date: str, story_id: int, data: dict) -> int:
             json.dumps(data.get("bullet_points", [])),
             json.dumps(data.get("slide_paths", [])),
             data.get("thumbnail_path", ""),
+            data.get("reel_thumb_path", ""),
             json.dumps(data.get("image_urls", [])),
             data.get("reel_url", ""),
             "draft",
@@ -199,6 +207,14 @@ def get_generated_posts(run_date: str = None) -> list[dict]:
                     d[field] = json.loads(d[field] or "[]")
                 except Exception:
                     d[field] = []
+            # Derive reel_thumb_url from the stored path
+            rtp = d.get("reel_thumb_path", "")
+            if rtp:
+                from pathlib import Path as _Path
+                from config import IMAGE_HOST_URL
+                d["reel_thumb_url"] = f"{IMAGE_HOST_URL}/generated/{_Path(rtp).name}"
+            else:
+                d["reel_thumb_url"] = ""
             result.append(d)
         return result
 

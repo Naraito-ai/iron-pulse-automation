@@ -439,21 +439,59 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
             try: os.remove(f)
             except Exception: pass
 
-    # ── Generate reel thumbnail from the primary background + slide 1 overlay ─
+    # ── Generate reel thumbnail with Trending Audio overlay ───────────────────
     reel_thumb_path = str(GENERATED_DIR / f"{slug}_reel_thumb.jpg")
     try:
+        # 1. Base: primary background resized to reel dimensions
+        bg_img = Image.open(str(primary_bg)).convert("RGB")
+        bg_img = bg_img.resize((W, H), Image.LANCZOS)
+
+        # 2. Overlay from slide 1 caption
         thumb_overlay = _make_caption_overlay(
             slides_text[0].get("title", ""), "", slug + "_thumb", 99, W, H
         )
-        bg_img = Image.open(str(primary_bg)).convert("RGB")
-        bg_img = bg_img.resize((W, H), Image.LANCZOS)
         overlay_img = Image.open(thumb_overlay).convert("RGBA")
         bg_rgba = bg_img.convert("RGBA")
         composited = Image.alpha_composite(bg_rgba, overlay_img).convert("RGB")
-        composited.save(reel_thumb_path, "JPEG", quality=95)
         try: os.remove(thumb_overlay)
         except Exception: pass
-        logger.info("Reel thumbnail saved: %s", reel_thumb_path)
+
+        # 3. Draw "🎵 Add Trending Audio" banner at the bottom
+        draw = ImageDraw.Draw(composited)
+        banner_h = 88
+        banner_y = H - banner_h
+        # Dark gradient banner
+        for y in range(banner_h):
+            alpha = int(200 * (y / banner_h))
+            draw.rectangle([(0, banner_y + y), (W, banner_y + y + 1)],
+                           fill=(0, 0, 0, alpha) if composited.mode == "RGBA" else (0, 0, 0))
+        # Musical note pill
+        pill_w, pill_h = 340, 44
+        pill_x = (W - pill_w) // 2
+        pill_y = H - 62
+        draw.rounded_rectangle([(pill_x, pill_y), (pill_x + pill_w, pill_y + pill_h)],
+                                radius=22, fill=(0, 0, 0, 200) if composited.mode == "RGBA" else (20, 20, 20))
+        draw.rounded_rectangle([(pill_x, pill_y), (pill_x + pill_w, pill_y + pill_h)],
+                                radius=22, outline=(255, 255, 255, 60) if composited.mode == "RGBA" else (80, 80, 80), width=1)
+
+        # Load font for overlay text
+        try:
+            font_path = FONTS_DIR / "Montserrat-Bold.ttf"
+            if not font_path.exists():
+                font_path = FONTS_DIR / "Inter-Bold.ttf"
+            font = ImageFont.truetype(str(font_path), 22) if font_path.exists() else ImageFont.load_default()
+        except Exception:
+            font = ImageFont.load_default()
+
+        text = "🎵  Add Trending Audio for 5× Reach"
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+        tx = (W - tw) // 2
+        ty = pill_y + (pill_h - (bbox[3] - bbox[1])) // 2
+        draw.text((tx, ty), text, font=font, fill=(255, 255, 255))
+
+        composited.save(reel_thumb_path, "JPEG", quality=95)
+        logger.info("Reel thumbnail saved with trending audio overlay: %s", reel_thumb_path)
     except Exception as e:
         logger.warning("Reel thumbnail generation failed: %s", e)
         reel_thumb_path = ""
