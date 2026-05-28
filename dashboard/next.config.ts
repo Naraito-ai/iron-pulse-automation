@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      { source: '/api/:path*', destination: 'http://localhost:8000/api/:path*' },
+      { source: '/api/:path*', destination: 'https://backend-v2-production-32c5.up.railway.app/api/:path*' },
     ];
   },
 };
