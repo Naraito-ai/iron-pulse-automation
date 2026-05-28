@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { api, SystemStatus, AnalyticsSummary, LogEntry } from '@/lib/api';
+import { api, SystemStatus, AnalyticsSummary, LogEntry, API_BASE } from '@/lib/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface PublishedPost {
