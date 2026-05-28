@@ -142,7 +142,7 @@ def get_performance_summary() -> dict:
     import os
     
     token = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
-    user_id = os.environ.get("INSTAGRAM_USER_ID", "")
+    user_id = os.environ.get("INSTAGRAM_USER_ID", "17841431671519501")
 
     if not token or not user_id or DEMO_MODE:
         return _fallback_summary()
