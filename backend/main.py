@@ -346,9 +346,10 @@ def start_scheduler() -> BackgroundScheduler:
     # ── 5 staggered daily posts at peak Instagram times ───────────────────────
     for slot in POST_SCHEDULE:
         h, m, rank, ctype = slot["hour"], slot["minute"], slot["rank"], slot["content_type"]
+        scheduled_time = f"{h:02d}:{m:02d}"
         scheduler.add_job(
             run_single_post,
-            args=[rank],
+            args=[rank, scheduled_time],
             trigger=CronTrigger(hour=h, minute=m, timezone=TIMEZONE),
             id=f"post_{rank}_{ctype}",
             name=f"{ctype} @ {h:02d}:{m:02d} IST",
@@ -356,6 +357,7 @@ def start_scheduler() -> BackgroundScheduler:
             misfire_grace_time=1800,
         )
         logger.info("  📅 Publishing Slot %d: %s at %02d:%02d IST", rank + 1, ctype, h, m)
+
 
     # ── Analytics refresh every 6 hours ──────────────────────────────────────
     scheduler.add_job(
