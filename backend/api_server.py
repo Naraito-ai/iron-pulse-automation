@@ -217,6 +217,21 @@ async def get_logs(limit: int = 100, run_date: str = None):
     logs = db.get_logs(limit=limit, run_date=run_date)
     return {"logs": logs, "count": len(logs)}
 
+@app.get("/api/raw-logs")
+async def get_raw_logs():
+    """Fetch raw automation.log from disk to debug crashes."""
+    import os
+    from config import DATA_DIR
+    log_file = DATA_DIR / "automation.log"
+    if not log_file.exists():
+        return {"error": "Log file not found"}
+    try:
+        with open(log_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()[-200:]
+            return {"logs": "".join(lines)}
+    except Exception as e:
+        return {"error": str(e)}
+
 
 @app.get("/api/history")
 async def get_history():
