@@ -212,24 +212,26 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
 
 def _fetch_tts_audio(text: str, output_path: str) -> bool:
     """Fetch AI voiceover from ElevenLabs if API key is present."""
-    from config import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID
-    import requests
-    if not ELEVENLABS_API_KEY:
+    import os, requests
+    # Always read dynamically so Railway env vars are picked up
+    api_key  = os.environ.get("ELEVENLABS_API_KEY", "")
+    voice_id = os.environ.get("ELEVENLABS_VOICE_ID", "TX3LPaxmHKxFdv7VOQHJ")  # Liam
+    if not api_key:
         return False
     try:
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
         headers = {
             "Accept": "audio/mpeg",
             "Content-Type": "application/json",
-            "xi-api-key": ELEVENLABS_API_KEY
+            "xi-api-key": api_key
         }
         data = {
-            "text": text,
-            "model_id": "eleven_monolingual_v1",
-            "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}
+            "text": text[:500],  # Keep under limit
+            "model_id": "eleven_turbo_v2_5",  # Fast + available on free tier
+            "voice_settings": {"stability": 0.45, "similarity_boost": 0.80}
         }
-        logger.info("Fetching ElevenLabs voiceover...")
-        response = requests.post(url, json=data, headers=headers)
+        logger.info("Fetching ElevenLabs voiceover (voice: %s)...", voice_id)
+        response = requests.post(url, json=data, headers=headers, timeout=30)
         if response.status_code == 200:
             with open(output_path, "wb") as f:
                 f.write(response.content)
@@ -241,6 +243,38 @@ def _fetch_tts_audio(text: str, output_path: str) -> bool:
     except Exception as e:
         logger.error("TTS fetch failed: %s", e)
         return False
+
+
+def _ensure_music(music_dir: Path) -> list:
+    """
+    Ensure at least one background music track exists.
+    Downloads a royalty-free phonk/gym beat from archive.org if folder is empty.
+    """
+    songs = list(music_dir.glob("*.mp3"))
+    if songs:
+        return songs
+
+    import requests
+    # Royalty-free gym/phonk beats from archive.org (public domain)
+    MUSIC_URLS = [
+        ("gym_beat_1.mp3", "https://archive.org/download/gym-phonk-mix/phonk_beat_1.mp3"),
+        ("gym_beat_2.mp3", "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Komiku/Bip_Boup/Komiku_-_01_-_Captain_Kupid.mp3"),
+    ]
+    for fname, url in MUSIC_URLS:
+        try:
+            logger.info("Downloading background music: %s", fname)
+            r = requests.get(url, timeout=30, stream=True)
+            if r.status_code == 200:
+                fpath = music_dir / fname
+                with open(fpath, "wb") as f:
+                    for chunk in r.iter_content(1024 * 64):
+                        f.write(chunk)
+                songs.append(fpath)
+                logger.info("Music downloaded: %s", fname)
+                break
+        except Exception as e:
+            logger.warning("Music download failed for %s: %s", fname, e)
+    return songs
 
 
 # ─── Pexels Video Background Fetcher ──────────────────────────────────────────
@@ -492,7 +526,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
         has_tts = _fetch_tts_audio(script_text, tts_audio_path)
 
     music_dir = Path(__file__).parent / "assets/music"
-    songs = list(music_dir.glob("*.mp3"))
+    songs = _ensure_music(music_dir)
     
     if has_tts:
         # Mix TTS with gym beat (gym beat at 10% volume)

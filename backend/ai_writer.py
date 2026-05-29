@@ -327,10 +327,16 @@ CAROUSEL_TYPES = {"save_list", "myth_buster", "transformation"}
 # ─── LLM Providers ────────────────────────────────────────────────────────────
 
 def _call_gemini(story: dict, content_type: str) -> dict:
+    import os
     from google import genai
     from google.genai import types
 
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    # Read key dynamically so Railway env vars are always picked up
+    api_key = os.environ.get("GEMINI_API_KEY", GEMINI_API_KEY)
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set")
+
+    client = genai.Client(api_key=api_key)
     prompt = PROMPTS[content_type].format(
         title=story.get("title", ""),
         summary=story.get("summary", ""),
@@ -383,6 +389,7 @@ def _call_openai(story: dict, content_type: str) -> dict:
 
 def generate_content_for_story(story: dict, rank: int = 0) -> dict:
     """Generate viral content for a single story, using the right content type for that slot."""
+    import os
     content_type = CONTENT_TYPE_ORDER[rank % len(CONTENT_TYPE_ORDER)]
 
     if DEMO_MODE:
@@ -391,11 +398,16 @@ def generate_content_for_story(story: dict, rank: int = 0) -> dict:
         content["post_format"] = "reel" if content_type in REEL_TYPES else "carousel"
         return content
 
+    # Read key dynamically — critical for Railway where env vars load after module import
+    live_gemini_key = os.environ.get("GEMINI_API_KEY", GEMINI_API_KEY)
+    live_openai_key = os.environ.get("OPENAI_API_KEY", OPENAI_API_KEY)
+    live_provider   = os.environ.get("AI_PROVIDER", AI_PROVIDER)
+
     logger.info("Generating %s content for: %s", content_type, story.get("title", "")[:50])
     try:
-        if AI_PROVIDER == "openai" and OPENAI_API_KEY:
+        if live_provider == "openai" and live_openai_key:
             content = _call_openai(story, content_type)
-        elif GEMINI_API_KEY:
+        elif live_gemini_key:
             content = _call_gemini(story, content_type)
         else:
             logger.warning("No AI provider configured, using demo content")
