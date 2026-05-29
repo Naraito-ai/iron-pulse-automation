@@ -242,29 +242,30 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
 
 
 def _fetch_tts_audio(text: str, output_path: str) -> bool:
-    """Fetch AI voiceover using edge-tts (100% Free, unlimited, no API keys)."""
+    """Fetch AI voiceover using gTTS (100% Free) and pitch-shift it to sound deep/masculine."""
     import subprocess
     import sys
     try:
-        # Use a deep, masculine American voice (GuyNeural)
-        voice = "en-US-GuyNeural"
+        from gtts import gTTS
+        logger.info("Generating free voiceover with Google TTS...")
+        tts = gTTS(text=text[:500], lang="en", tld="us")
+        temp_audio = str(output_path) + "_temp.mp3"
+        tts.save(temp_audio)
         
-        # We invoke the edge-tts CLI directly
-        cmd = [
-            sys.executable, "-m", "edge_tts",
-            "--voice", voice,
-            "--text", text[:500],
-            "--write-media", output_path
-        ]
+        # Pitch shift the female Google voice down to make it sound deep and masculine
+        # asetrate lowers pitch, aresample restores original rate, atempo speeds it back up
+        pitch_factor = 0.7  # 0.7 is a deep pitch
+        subprocess.run([
+            "ffmpeg", "-y", "-i", temp_audio,
+            "-filter:a", f"asetrate=24000*{pitch_factor},aresample=24000,atempo=1/{pitch_factor}",
+            output_path
+        ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
-        logger.info("Generating free voiceover with edge-tts (%s)...", voice)
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try: os.remove(temp_audio)
+        except Exception: pass
         
-        logger.info("edge-tts voiceover saved successfully")
+        logger.info("gTTS voiceover saved and pitch-shifted successfully")
         return True
-    except subprocess.CalledProcessError as e:
-        logger.error("edge-tts error: %s", e.stderr.decode("utf-8", errors="ignore"))
-        return False
     except Exception as e:
         logger.error("TTS fetch failed: %s", e)
         return False
