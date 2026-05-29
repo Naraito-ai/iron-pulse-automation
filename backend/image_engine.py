@@ -242,35 +242,29 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
 
 
 def _fetch_tts_audio(text: str, output_path: str) -> bool:
-    """Fetch AI voiceover from ElevenLabs if API key is present."""
-    import os, requests
-    # Always read dynamically so Railway env vars are picked up
-    api_key  = os.environ.get("ELEVENLABS_API_KEY", "")
-    voice_id = os.environ.get("ELEVENLABS_VOICE_ID", "TX3LPaxmHKxFdv7VOQHJ")  # Liam
-    if not api_key:
-        return False
+    """Fetch AI voiceover using edge-tts (100% Free, unlimited, no API keys)."""
+    import subprocess
+    import sys
     try:
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-        headers = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": api_key
-        }
-        data = {
-            "text": text[:500],  # Keep under limit
-            "model_id": "eleven_turbo_v2_5",  # Fast + available on free tier
-            "voice_settings": {"stability": 0.45, "similarity_boost": 0.80}
-        }
-        logger.info("Fetching ElevenLabs voiceover (voice: %s)...", voice_id)
-        response = requests.post(url, json=data, headers=headers, timeout=30)
-        if response.status_code == 200:
-            with open(output_path, "wb") as f:
-                f.write(response.content)
-            logger.info("ElevenLabs voiceover saved successfully")
-            return True
-        else:
-            logger.error("ElevenLabs error: %s", response.text)
-            return False
+        # Use a deep, masculine American voice (GuyNeural)
+        voice = "en-US-GuyNeural"
+        
+        # We invoke the edge-tts CLI directly
+        cmd = [
+            sys.executable, "-m", "edge_tts",
+            "--voice", voice,
+            "--text", text[:500],
+            "--write-media", output_path
+        ]
+        
+        logger.info("Generating free voiceover with edge-tts (%s)...", voice)
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        logger.info("edge-tts voiceover saved successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error("edge-tts error: %s", e.stderr.decode("utf-8", errors="ignore"))
+        return False
     except Exception as e:
         logger.error("TTS fetch failed: %s", e)
         return False

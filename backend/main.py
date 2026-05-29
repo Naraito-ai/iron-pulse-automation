@@ -100,6 +100,7 @@ def run_daily_pregeneration():
         # ── Step 1: Fetch News
         _broadcast("INFO", "NewsFetcher", "📡 Fetching latest AI news from multiple sources...", run_date)
         stories = fetch_top_ai_news()
+        stories = stories[:1] # FREE TIER LIMIT: Only process 1 post per day to avoid Gemini 15 RPM limit
         stats["stories_fetched"] = len(stories)
         story_ids = db.save_news_stories(run_date, stories)
         _broadcast("SUCCESS", "NewsFetcher", f"✅ Fetched {len(stories)} top AI stories", run_date)
