@@ -233,12 +233,93 @@ def _fetch_tts_audio(text: str, output_path: str) -> bool:
         if response.status_code == 200:
             with open(output_path, "wb") as f:
                 f.write(response.content)
+            logger.info("ElevenLabs voiceover saved successfully")
             return True
         else:
             logger.error("ElevenLabs error: %s", response.text)
             return False
     except Exception as e:
         logger.error("TTS fetch failed: %s", e)
+        return False
+
+
+# ─── Pexels Video Background Fetcher ──────────────────────────────────────────
+
+# Maps content type → best Pexels search query for maximum visual impact
+PEXELS_QUERY_MAP = {
+    "hot_take":       "intense gym workout barbell",
+    "quick_tip":      "athlete training technique form",
+    "save_list":      "gym equipment weights dumbbells",
+    "myth_buster":    "fitness science gym training",
+    "meme_relatable": "crowded gym monday bench press",
+    "transformation": "body transformation fitness motivation",
+}
+
+
+def _fetch_pexels_video(content_type: str, output_path: str) -> bool:
+    """
+    Download a real gym video from Pexels as the Reel background.
+    Falls back to static background images if Pexels is unavailable.
+    """
+    from config import PEXELS_API_KEY
+    import requests
+
+    if not PEXELS_API_KEY or PEXELS_API_KEY == "your_pexels_api_key_here":
+        return False
+
+    query = PEXELS_QUERY_MAP.get(content_type, "gym workout fitness")
+    url = f"https://api.pexels.com/videos/search"
+    headers = {"Authorization": PEXELS_API_KEY}
+    params = {
+        "query": query,
+        "orientation": "portrait",   # 9:16 vertical for Reels
+        "size": "medium",
+        "per_page": 10,
+    }
+
+    try:
+        logger.info("Fetching Pexels video for content type: %s (query: %s)", content_type, query)
+        r = requests.get(url, headers=headers, params=params, timeout=15)
+        if r.status_code != 200:
+            logger.warning("Pexels API error %d: %s", r.status_code, r.text[:200])
+            return False
+
+        videos = r.json().get("videos", [])
+        if not videos:
+            logger.warning("No Pexels videos found for query: %s", query)
+            return False
+
+        # Pick a random video from results for variety each day
+        video = random.choice(videos[:5])
+
+        # Find best quality video file ≤ 1080p
+        video_files = sorted(
+            video.get("video_files", []),
+            key=lambda f: f.get("width", 0),
+            reverse=True,
+        )
+        # Prefer portrait files, fall back to any
+        portrait_files = [f for f in video_files if f.get("width", 0) <= f.get("height", 1)]
+        chosen = portrait_files[0] if portrait_files else (video_files[0] if video_files else None)
+
+        if not chosen:
+            return False
+
+        video_url = chosen.get("link")
+        logger.info("Downloading Pexels video: %s", video_url[:80])
+        vid_resp = requests.get(video_url, timeout=60, stream=True)
+        if vid_resp.status_code == 200:
+            with open(output_path, "wb") as f:
+                for chunk in vid_resp.iter_content(chunk_size=1024 * 1024):
+                    f.write(chunk)
+            logger.info("Pexels video saved: %s", output_path)
+            return True
+        else:
+            logger.warning("Failed to download Pexels video: %d", vid_resp.status_code)
+            return False
+
+    except Exception as e:
+        logger.error("Pexels fetch failed: %s", e)
         return False
 
 
@@ -258,8 +339,11 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
     video_path   = GENERATED_DIR / f"{slug}_reel.mp4"
     tmp_clips    = []
 
-    # ── Pick content-type specific background ─────────────────────────────────
-    # Map each content type to a dedicated background for visual relevance
+    # ── Try Pexels first for real moving gym footage ──────────────────────────
+    pexels_video_path = str(GENERATED_DIR / f"{slug}_pexels_raw.mp4")
+    use_pexels = _fetch_pexels_video(content_type, pexels_video_path)
+
+    # ── Fallback: content-type specific static background ─────────────────────
     TYPE_BG_MAP = {
         "hot_take":       "hot_take_bg.png",
         "quick_tip":      "quick_tip_bg.png",
@@ -270,26 +354,21 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
     }
     primary_bg = GYM_BG_DIR / TYPE_BG_MAP.get(content_type, "hot_take_bg.png")
     if not primary_bg.exists():
-        # Fallback to any available gym background
         fallbacks = sorted(GYM_BG_DIR.glob("gym_bg_*.png")) + sorted(GYM_BG_DIR.glob("*.png"))
         primary_bg = fallbacks[0] if fallbacks else Path(slide_paths[0])
-
-    # Use the primary bg for ALL slides so the visual is consistent per post
-    # But vary pan direction per slide for dynamic feel
-    bg_images = [primary_bg] * len(slide_paths)
 
     # Build per-slide text
     if content:
         headline = content.get("headline", "")
         bullets  = content.get("bullet_points", [])
         stat     = content.get("stat_highlight", "")
-        cta      = content.get("cta", "Follow  for daily fitness")
+        cta      = content.get("cta", "Follow for daily fitness")
         slides_text = [
             {"title": headline[:70],                              "body": ""},
             {"title": bullets[0][:60] if bullets else "",         "body": stat[:60]},
             {"title": bullets[1][:60] if len(bullets) > 1 else "", "body": ""},
             {"title": bullets[2][:60] if len(bullets) > 2 else "", "body": ""},
-            {"title": cta[:70],                                   "body": "#  #Fitness  #GymLife"},
+            {"title": cta[:70],                                   "body": "#Fitness #GymLife"},
         ]
     else:
         slides_text = [{"title": "", "body": ""} for _ in slide_paths]
@@ -298,55 +377,72 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
     FRAMES = FPS * DURATION
     W, H   = REEL_WIDTH, REEL_HEIGHT
 
-    # Pan directions cycle per slide: center, left→right, right→left, zoom-out, center
     pan_configs = [
-        {"z": "1+0.05*on/{F}", "x": "iw/2-(iw/zoom/2)",            "y": "ih/2-(ih/zoom/2)"},
-        {"z": "1+0.04*on/{F}", "x": "0",                            "y": "ih/2-(ih/zoom/2)"},
-        {"z": "1+0.04*on/{F}", "x": "iw-(iw/zoom)",                 "y": "ih/2-(ih/zoom/2)"},
-        {"z": "1+0.03*on/{F}", "x": "iw/2-(iw/zoom/2)",            "y": "0"},
-        {"z": "1+0.06*on/{F}", "x": "iw/2-(iw/zoom/2)",            "y": "ih-(ih/zoom)"},
+        {"z": "1+0.05*on/{F}", "x": "iw/2-(iw/zoom/2)", "y": "ih/2-(ih/zoom/2)"},
+        {"z": "1+0.04*on/{F}", "x": "0",                 "y": "ih/2-(ih/zoom/2)"},
+        {"z": "1+0.04*on/{F}", "x": "iw-(iw/zoom)",      "y": "ih/2-(ih/zoom/2)"},
+        {"z": "1+0.03*on/{F}", "x": "iw/2-(iw/zoom/2)", "y": "0"},
+        {"z": "1+0.06*on/{F}", "x": "iw/2-(iw/zoom/2)", "y": "ih-(ih/zoom)"},
     ]
-
-    W, H   = REEL_WIDTH, REEL_HEIGHT
 
     for i, (src_path, txt) in enumerate(zip(slide_paths, slides_text)):
         pan    = pan_configs[i % len(pan_configs)]
         z_expr = pan["z"].replace("{F}", str(FRAMES))
         x_expr = pan["x"]
         y_expr = pan["y"]
-        bg_path   = str(bg_images[i % len(bg_images)])
         zoom_clip = GENERATED_DIR / f"{slug}_zoom{i}.mp4"
         tmp_clip  = GENERATED_DIR / f"{slug}_clip{i}.mp4"
         tmp_clips.append(str(tmp_clip))
 
-        # ── PASS 1: Ken Burns zoom on content-specific background ─────────────
-        zoom_vf = (
-            f"scale={W}:{H}:force_original_aspect_ratio=increase,"
-            f"crop={W}:{H},"
-            f"zoompan=z='{z_expr}':x='{x_expr}':y='{y_expr}'"
-            f":d={FRAMES}:s={W}x{H}:fps={FPS},"
-            f"fade=t=in:st=0:d=0.4,"
-            f"fade=t=out:st={DURATION - 0.4}:d=0.4"
-        )
-        try:
-            subprocess.run([
-                "ffmpeg", "-y", "-loop", "1", "-i", bg_path,
-                "-t", str(DURATION), "-vf", zoom_vf,
-                "-fps_mode", "cfr", "-r", str(FPS),
-                "-threads", "1",
-                "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
-                str(zoom_clip),
-            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError:
-            # Fallback: static
-            subprocess.run([
-                "ffmpeg", "-y", "-loop", "1", "-i", bg_path, "-t", str(DURATION),
-                "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}",
-                "-fps_mode", "cfr", "-r", str(FPS),
-                "-threads", "1",
-                "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
-                str(zoom_clip),
-            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # ── PASS 1: Extract clip from real Pexels video OR use static bg ──────
+        start_sec = i * DURATION
+        if use_pexels:
+            # Cut a DURATION-second segment from the Pexels video per slide
+            try:
+                subprocess.run([
+                    "ffmpeg", "-y",
+                    "-ss", str(start_sec), "-i", pexels_video_path,
+                    "-t", str(DURATION),
+                    "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
+                           f"fade=t=in:st=0:d=0.3,fade=t=out:st={DURATION-0.3}:d=0.3",
+                    "-fps_mode", "cfr", "-r", str(FPS),
+                    "-an", "-threads", "1",
+                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "24",
+                    str(zoom_clip),
+                ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                logger.info("Pexels clip %d extracted for slug %s", i, slug)
+            except subprocess.CalledProcessError:
+                use_pexels = False  # Pexels clip failed, fall back to static
+
+
+        # ── PASS 1: Static background Ken Burns (only if Pexels didn't work) ──
+        if not use_pexels or not zoom_clip.exists():
+            zoom_vf = (
+                f"scale={W}:{H}:force_original_aspect_ratio=increase,"
+                f"crop={W}:{H},"
+                f"zoompan=z='{z_expr}':x='{x_expr}':y='{y_expr}'"
+                f":d={FRAMES}:s={W}x{H}:fps={FPS},"
+                f"fade=t=in:st=0:d=0.4,"
+                f"fade=t=out:st={DURATION - 0.4}:d=0.4"
+            )
+            try:
+                subprocess.run([
+                    "ffmpeg", "-y", "-loop", "1", "-i", str(primary_bg),
+                    "-t", str(DURATION), "-vf", zoom_vf,
+                    "-fps_mode", "cfr", "-r", str(FPS),
+                    "-threads", "1",
+                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    str(zoom_clip),
+                ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            except subprocess.CalledProcessError:
+                subprocess.run([
+                    "ffmpeg", "-y", "-loop", "1", "-i", str(primary_bg), "-t", str(DURATION),
+                    "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}",
+                    "-fps_mode", "cfr", "-r", str(FPS),
+                    "-threads", "1",
+                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    str(zoom_clip),
+                ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # ── PASS 2: PIL caption overlay ───────────────────────────────────────
         overlay_path = None
@@ -434,7 +530,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
     for cp in tmp_clips:
         try: os.remove(cp)
         except Exception: pass
-    for f in [str(concat_file), tts_audio_path if has_tts else ""]:
+    for f in [str(concat_file), tts_audio_path if has_tts else "", pexels_video_path if use_pexels else ""]:
         if f:
             try: os.remove(f)
             except Exception: pass
