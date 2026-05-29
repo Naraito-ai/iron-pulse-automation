@@ -225,27 +225,20 @@ Return JSON:
 DEMO_CONTENT = {
     "hot_take": {
         "content_type": "hot_take",
-        "headline": "Cardio Is Destroying Your Muscle Gains",
-        "subheadline": "The fitness world has been lying to you for decades",
+        "headline": "Cardio Kills Muscle",
+        "subheadline": "Stop running, start lifting",
         "bullet_points": [
-            "Chronic cardio elevates cortisol — literally eats muscle tissue",
-            "Studies show 30+ mins daily cardio reduces hypertrophy by up to 30%",
-            "Zone 2 cardio (20 min, 2x/week) preserves muscle while burning fat"
+            "Cardio eats muscle tissue",
+            "Long runs lower testosterone",
+            "Lift heavy weights instead"
         ],
-        "stat_highlight": "30% less muscle growth with daily long cardio",
-        "caption": "Cardio is NOT the answer to body recomposition 🔥\n\nIf you're spending 1 hour on the treadmill daily — you're working against yourself.\n\nAm I wrong? Drop your take below 👇",
-        "hashtags": "#HotTake #FitnessMyths #GymTruth #CardioKills #Bodybuilding #GymLife #Fitness #WorkoutTips #GymMotivation #",
-        "cta": "Agree or disagree? Comment below 👇"
+        "stat_highlight": "30% less muscle growth",
+        "caption": "Cardio is NOT the answer to body recomposition 🔥\n\nSave this before your next workout 👇",
+        "hashtags": "#FitnessMyths #GymTruth #Bodybuilding #GymLife #Fitness #",
+        "cta": "Agree or disagree? 👇"
     },
     "quick_tip": {
         "content_type": "quick_tip",
-        "headline": "Rest 3 Minutes Between Sets Not 60 Seconds",
-        "subheadline": "This single change doubled my strength in 8 weeks",
-        "bullet_points": [
-            "Full ATP restoration requires 2-3 minutes between heavy sets",
-            "Shorter rest = training endurance, not strength or size",
-            "Apply to compound lifts: squat, bench, deadlift, OHP"
-        ],
         "stat_highlight": "2x strength gains with 3 min rest vs 1 min",
         "caption": "Stop rushing your rest periods 🛑\n\nLonger rest = more reps next set = more gains 💪\n\nSave for your next workout 🔖",
         "hashtags": "#GymTip #WorkoutTips #FitnessHack #GainsTip #GymLife #Fitness #Bodybuilding #GymMotivation #TrainingTips #",
