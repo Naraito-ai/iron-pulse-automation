@@ -156,7 +156,9 @@ def get_config(key: str, default: str = "") -> str:
 
 def get_ig_token() -> str:
     import os
-    return get_config("INSTAGRAM_ACCESS_TOKEN", os.getenv("INSTAGRAM_ACCESS_TOKEN", ""))
+    db_token = get_config("INSTAGRAM_ACCESS_TOKEN", "")
+    env_token = os.getenv("INSTAGRAM_ACCESS_TOKEN", "")
+    return db_token if db_token else env_token
 
 def set_ig_token(token: str):
     import os
