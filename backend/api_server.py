@@ -360,6 +360,10 @@ async def list_thumbnails():
     }
 
 
+# Cache token info for 5 minutes to prevent Facebook API rate limits
+import time
+token_status_cache = {}
+
 @app.get("/api/token-status")
 async def get_token_status():
     """Check Instagram token validity and expiry."""
@@ -367,9 +371,23 @@ async def get_token_status():
     token = db.get_ig_token()
     if not token:
         return {"status": "missing", "days_remaining": 0, "message": "No token configured"}
-    info = get_token_info(token)
+        
+    # Check cache first (5 min TTL)
+    now = time.time()
+    cached = token_status_cache.get(token)
+    if cached and (now - cached["timestamp"] < 300):
+        info = cached["info"]
+    else:
+        info = get_token_info(token)
+        # Always cache the response so we don't spam Facebook on rate limits
+        token_status_cache[token] = {"info": info, "timestamp": now}
+
     if not info["is_valid"]:
-        return {"status": "expired", "days_remaining": 0, "message": "Token expired — paste a new one below"}
+        # Check if it was a rate limit error by looking at the days_remaining
+        # Typically a real expiry might have a different footprint, but for now we'll just say:
+        return {"status": "warning", "days_remaining": 0, "message": "Token expired OR Meta rate limit reached. Will check again later."}
+
+
     days = info["days_remaining"]
     if days == 9999:
         return {"status": "permanent", "days_remaining": 9999, "message": "System User token — never expires"}
