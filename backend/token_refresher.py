@@ -31,16 +31,28 @@ def get_token_info(access_token: str) -> dict:
     Check the current token's validity and expiry.
     Returns dict with: is_valid, expires_at (datetime or None), days_remaining
     """
+    import os
+    app_id = os.getenv("META_APP_ID", "")
+    app_secret = os.getenv("META_APP_SECRET", "")
+    
+    # Facebook requires an App Token to inspect a User Token
+    auth_token = f"{app_id}|{app_secret}" if (app_id and app_secret) else access_token
+
     try:
         # Use debug_token endpoint to inspect the token
         app_token_url = f"{GRAPH_API_BASE}/debug_token"
         resp = requests.get(app_token_url, params={
             "input_token": access_token,
-            "access_token": access_token,  # using same token as app token for inspection
+            "access_token": auth_token,
         }, timeout=15)
         data = resp.json().get("data", {})
 
         if not data.get("is_valid"):
+            # Fallback check using /me in case App Token fails or is missing
+            me_resp = requests.get(f"{GRAPH_API_BASE}/me", params={"access_token": access_token})
+            if me_resp.status_code == 200:
+                # Token works, but we can't inspect expiry. Assume short-lived (0 days) to force refresh.
+                return {"is_valid": True, "expires_at": None, "days_remaining": 0}
             return {"is_valid": False, "expires_at": None, "days_remaining": 0}
 
         expires_at_ts = data.get("expires_at")
