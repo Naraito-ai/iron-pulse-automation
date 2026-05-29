@@ -232,6 +232,16 @@ async def get_raw_logs():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/api/debug-env-dump")
+async def debug_env_dump():
+    import os
+    safe_env = {}
+    for k, v in os.environ.items():
+        if "KEY" in k or "TOKEN" in k or "PASS" in k:
+            safe_env[k] = f"SET (Length: {len(v)})" if v else "EMPTY"
+        else:
+            safe_env[k] = v
+    return safe_env
 
 @app.get("/api/history")
 async def get_history():
