@@ -268,9 +268,18 @@ async def force_post(post_id: int, background_tasks: BackgroundTasks):
     """Instantly publish a specific draft to Instagram, bypassing the schedule."""
     # Mark as pending so the publisher picks it up
     db.update_post_status(post_id, "pending")
-    from instagram_publisher import publish_pending_posts
+    from instagram_publisher import publish_post
+    
+    # Fetch the post data
+    today = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+    drafts = db.get_generated_posts(today)
+    draft = next((d for d in drafts if d["id"] == post_id), None)
+    
+    if not draft:
+        return JSONResponse(status_code=404, content={"error": "Draft not found"})
+        
     logger.info("Force publishing post %d", post_id)
-    background_tasks.add_task(publish_pending_posts)
+    background_tasks.add_task(publish_post, draft, draft.get("rank", 0))
     return {"status": "triggered", "message": f"Publishing post {post_id} to Instagram..."}
 
 @app.post("/api/trigger")
