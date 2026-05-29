@@ -164,6 +164,7 @@ export default function Dashboard() {
 
   const tokenColor =
     tokenStatus?.status === 'expired'  ? '#FF3250' :
+    tokenStatus?.status === 'missing'  ? '#FF3250' :
     tokenStatus?.status === 'critical' ? '#FF3250' :
     tokenStatus?.status === 'warning'  ? '#FFB400' : '#00FF88';
 
@@ -296,10 +297,11 @@ export default function Dashboard() {
                 tokenStatus?.status === 'critical' ? `${tokenStatus.days_remaining}d — CRITICAL` :
                 tokenStatus?.status === 'warning'  ? `${tokenStatus.days_remaining}d ⚠️` :
                 tokenStatus?.status === 'permanent'? 'Never expires ♾️' :
+                tokenStatus?.status === 'missing'  ? 'MISSING ❌' :
                 tokenStatus ? `${tokenStatus.days_remaining}d left ✅` : '...'
               }
             </div>
-            {(tokenStatus?.status === 'expired' || tokenStatus?.status === 'critical' || tokenStatus?.status === 'warning') && (
+            {(tokenStatus?.status === 'expired' || tokenStatus?.status === 'critical' || tokenStatus?.status === 'warning' || tokenStatus?.status === 'missing') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <textarea value={newToken} onChange={e => setNewToken(e.target.value)}
                   placeholder="Paste new token..."
