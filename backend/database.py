@@ -98,8 +98,9 @@ def init_db():
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             run_date    TEXT,
             level       TEXT NOT NULL,
-            component   TEXT NOT NULL,
+            module      TEXT,
             message     TEXT NOT NULL,
+            details     TEXT,
             created_at  TEXT DEFAULT (datetime('now'))
         );
 
@@ -122,6 +123,15 @@ def init_db():
             finished_at TEXT
         );
         """)
+    
+    # Safe migration for the botched schema update
+    with get_db() as conn:
+        try:
+            conn.execute("ALTER TABLE automation_logs ADD COLUMN module TEXT")
+            conn.execute("ALTER TABLE automation_logs ADD COLUMN details TEXT")
+        except Exception:
+            pass
+
     logger.info("Database initialized at %s", DB_PATH)
 
 
