@@ -263,6 +263,16 @@ async def generate_custom(body: dict, background_tasks: BackgroundTasks):
     background_tasks.add_task(run_custom_post, prompt)
     return {"status": "triggered", "message": "Custom post generation started..."}
 
+@app.post("/api/force-post/{post_id}")
+async def force_post(post_id: int, background_tasks: BackgroundTasks):
+    """Instantly publish a specific draft to Instagram, bypassing the schedule."""
+    # Mark as pending so the publisher picks it up
+    db.update_post_status(post_id, "pending")
+    from instagram_publisher import publish_pending_posts
+    logger.info("Force publishing post %d", post_id)
+    background_tasks.add_task(publish_pending_posts)
+    return {"status": "triggered", "message": f"Publishing post {post_id} to Instagram..."}
+
 @app.post("/api/trigger")
 async def trigger_pipeline(background_tasks: BackgroundTasks):
     """Manually trigger the pre-generation pipeline."""
