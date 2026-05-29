@@ -98,10 +98,15 @@ def init_db():
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             run_date    TEXT,
             level       TEXT NOT NULL,
-            module      TEXT,
+            component   TEXT NOT NULL,
             message     TEXT NOT NULL,
-            details     TEXT,
             created_at  TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS system_config (
+            key         TEXT PRIMARY KEY,
+            value       TEXT,
+            updated_at  TEXT DEFAULT (datetime('now'))
         );
 
         CREATE TABLE IF NOT EXISTS run_history (
@@ -118,6 +123,35 @@ def init_db():
         );
         """)
     logger.info("Database initialized at %s", DB_PATH)
+
+
+# ─── System Config ────────────────────────────────────────────────────────────
+
+def set_config(key: str, value: str):
+    """Save a config key-value pair to the database."""
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO system_config (key, value, updated_at) VALUES (?, ?, datetime('now')) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+            (key, value)
+        )
+
+def get_config(key: str, default: str = "") -> str:
+    """Retrieve a config value from the database."""
+    with get_db() as conn:
+        row = conn.execute("SELECT value FROM system_config WHERE key = ?", (key,)).fetchone()
+        if row:
+            return row["value"]
+    return default
+
+def get_ig_token() -> str:
+    import os
+    return get_config("INSTAGRAM_ACCESS_TOKEN", os.getenv("INSTAGRAM_ACCESS_TOKEN", ""))
+
+def set_ig_token(token: str):
+    import os
+    set_config("INSTAGRAM_ACCESS_TOKEN", token)
+    os.environ["INSTAGRAM_ACCESS_TOKEN"] = token
 
 
 # ─── News Stories ─────────────────────────────────────────────────────────────

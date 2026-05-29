@@ -365,10 +365,9 @@ async def list_thumbnails():
 
 @app.get("/api/token-status")
 async def get_token_status():
-    """Check Instagram access token health and days remaining."""
+    """Check Instagram token validity and expiry."""
     from token_refresher import get_token_info
-    import os
-    token = os.getenv("INSTAGRAM_ACCESS_TOKEN", "")
+    token = db.get_ig_token()
     if not token:
         return {"status": "missing", "days_remaining": 0, "message": "No token configured"}
     info = get_token_info(token)
@@ -388,22 +387,13 @@ async def get_token_status():
 
 @app.post("/api/update-token")
 async def update_token(body: dict):
-    """Update the Instagram access token from the dashboard."""
-    import os
-    from dotenv import set_key
-    from pathlib import Path
+    """Update the Instagram access token from the dashboard (persists to DB)."""
     new_token = (body.get("token") or "").strip()
     if not new_token or len(new_token) < 50:
         return JSONResponse(status_code=400, content={"error": "Invalid token"})
-    env_file = Path(__file__).parent.parent / ".env"
     try:
-        set_key(str(env_file), "INSTAGRAM_ACCESS_TOKEN", new_token)
-        # Also update in-process env
-        os.environ["INSTAGRAM_ACCESS_TOKEN"] = new_token
-        # Reload config
-        import importlib, config
-        importlib.reload(config)
-        logger.info("Access token updated via dashboard API")
+        db.set_ig_token(new_token)
+        logger.info("Access token updated persistently via dashboard API")
         return {"status": "updated", "message": "Token saved successfully! Pipeline will use new token."}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

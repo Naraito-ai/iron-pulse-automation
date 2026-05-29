@@ -8,7 +8,7 @@ import logging
 import random
 import requests
 from datetime import datetime
-from config import INSTAGRAM_ACCESS_TOKEN, GRAPH_API_BASE, DEMO_MODE
+from config import GRAPH_API_BASE, DEMO_MODE
 import database as db
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ def _fetch_live_metrics(ig_media_id: str) -> dict:
         url = f"{GRAPH_API_BASE}/{ig_media_id}"
         params = {
             "fields": METRICS_FIELDS,
-            "access_token": INSTAGRAM_ACCESS_TOKEN,
+            "access_token": __import__('database').get_ig_token(),
         }
         resp = requests.get(url, params=params, timeout=15)
         data = resp.json()
@@ -121,7 +121,9 @@ def poll_analytics_for_run(run_date: str):
         except Exception:
             hours = 24
 
-        if DEMO_MODE or not INSTAGRAM_ACCESS_TOKEN:
+        import database as db
+        token = db.get_ig_token()
+        if DEMO_MODE or not token:
             metrics = _demo_metrics(ig_id, hours_since_post=hours)
         else:
             metrics = _fetch_live_metrics(ig_id)
@@ -141,7 +143,8 @@ def get_performance_summary() -> dict:
     """Compute aggregate performance summary from Live Instagram Graph API or fallback."""
     import os
     
-    token = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
+    import database as db
+    token = db.get_ig_token()
     user_id = os.environ.get("INSTAGRAM_USER_ID", "17841431671519501")
 
     if not token or not user_id or DEMO_MODE:

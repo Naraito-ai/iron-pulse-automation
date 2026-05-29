@@ -15,8 +15,8 @@ from config import (
 logger = logging.getLogger(__name__)
 
 def _get_token() -> str:
-    """Always read the latest token from env — picks up updates without restart."""
-    return os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
+    import database as db
+    return db.get_ig_token()
 
 MAX_POLL_ATTEMPTS   = 30
 POLL_INTERVAL_SECONDS = 4

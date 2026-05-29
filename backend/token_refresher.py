@@ -91,13 +91,14 @@ def refresh_long_lived_token(current_token: str, app_id: str, app_secret: str) -
 
 
 def save_token_to_env(new_token: str) -> bool:
-    """Save the new token to .env file."""
+    """Save the new token to the database."""
+    import database as db
     try:
-        set_key(str(ENV_FILE), "INSTAGRAM_ACCESS_TOKEN", new_token)
-        logger.info("New token saved to .env")
+        db.set_ig_token(new_token)
+        logger.info("New token saved to DB persistently")
         return True
     except Exception as e:
-        logger.error("Failed to save token to .env: %s", e)
+        logger.error("Failed to save token to DB: %s", e)
         return False
 
 
@@ -107,8 +108,8 @@ def check_and_refresh_token() -> dict:
     Returns status dict with action taken.
     Called by the scheduler every day.
     """
-    load_dotenv(ENV_FILE)
-    current_token = os.getenv("INSTAGRAM_ACCESS_TOKEN", "")
+    import database as db
+    current_token = db.get_ig_token()
     app_id        = os.getenv("META_APP_ID", "")
     app_secret    = os.getenv("META_APP_SECRET", "")
 
