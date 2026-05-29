@@ -53,6 +53,10 @@ async def startup_event():
     _scheduler = start_scheduler()
     app.state.scheduler = _scheduler
     logger.info("✅ Scheduler started — 5 posts daily at peak IST times")
+    
+    # Start Discord Bot if token exists
+    from discord_bot import start_discord_bot
+    asyncio.create_task(start_discord_bot())
 
 # ─── WebSocket connection manager ─────────────────────────────────────────────
 

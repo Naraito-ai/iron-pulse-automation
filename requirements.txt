@@ -14,3 +14,4 @@ httpx==0.27.2
 pytz==2024.2
 colorlog==6.8.2
 gTTS==2.5.1
+discord.py==2.4.0

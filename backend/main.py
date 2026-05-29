@@ -57,9 +57,20 @@ def _broadcast(level: str, module: str, message: str, run_date: str = ""):
         "SUCCESS": logger.info,
         "WARNING": logger.warning,
         "ERROR":   logger.error,
-    }.get(level, logger.info)
     log_fn("[%s] %s", module, message)
     db.log_event(level, module, message, run_date=run_date)
+    
+    # Optionally send to Discord
+    try:
+        from discord_bot import broadcast_log_to_discord
+        import asyncio
+        # We must schedule it safely without blocking the thread
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(broadcast_log_to_discord(level, module, message))
+    except Exception as e:
+        logger.error(f"Discord broadcast error: {e}")
+
     if _ws_broadcast:
         try:
             _ws_broadcast({
