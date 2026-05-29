@@ -282,50 +282,52 @@ def run_comment_engagement():
     """Polls recent posts for new comments and uses Gemini to automatically reply."""
     from instagram_publisher import get_recent_comments, reply_to_comment
     from ai_writer import get_gemini_client
-    import google.generativeai as genai
-    
+
     _broadcast("INFO", "Engagement", "Checking for new comments to reply to...")
-    
+
     # Get last 3 published posts
     recent_posts = db.get_published_posts(limit=3)
     replied_count = 0
-    
-    genai_client = get_gemini_client()
-    if not genai_client:
+
+    client = get_gemini_client()
+    if not client:
         return
-        
-    model = genai.GenerativeModel('gemini-1.5-flash')
+
     sys_prompt = (
-        "You are the Iron Pulse fitness brand social media manager. "
-        "CRITICAL RULE: We only want to reply to a FEW high-value comments. "
-        "If the user's comment is just a single emoji, generic praise (e.g., 'fire', 'good video'), "
-        "or not a question, you MUST reply with EXACTLY the word: SKIP. "
-        "Only generate a reply if it's a question, a substantial comment, or a debate. "
-        "Keep replies very short (1-2 sentences) and encouraging."
+        "You are a fitness Instagram brand social media manager. "
+        "CRITICAL RULE: Only reply to questions, debates, or substantial comments. "
+        "If the comment is a single emoji, generic praise like 'fire' or 'great', "
+        "or otherwise low-value, reply with EXACTLY the word: SKIP. "
+        "Keep all replies very short (1-2 sentences max), encouraging, and use gym culture language."
     )
 
     for post in recent_posts:
         media_id = post.get("ig_media_id")
         if not media_id:
             continue
-            
+
         comments = get_recent_comments(media_id)
-        for c in comments[:5]: # Max 5 comments per post to avoid spamming
+        for c in comments[:5]:  # Max 5 comments per post to avoid spamming
             username = c.get("username", "user")
             text = c.get("text", "")
             comment_id = c.get("id")
-            
+
             try:
+                from google.genai import types
                 prompt = f"{sys_prompt}\n\nUser @{username} commented: '{text}'\n\nReply (or output SKIP):"
-                resp = model.generate_content(prompt)
-                reply_text = resp.text.strip()
-                
-                if reply_text.upper() != "SKIP" and reply_text != "":
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(temperature=0.8),
+                )
+                reply_text = response.text.strip()
+
+                if reply_text.upper() != "SKIP" and reply_text:
                     if reply_to_comment(comment_id, reply_text):
                         replied_count += 1
             except Exception as e:
                 logger.error("Failed to generate/send reply for comment %s: %s", comment_id, e)
-                
+
     if replied_count > 0:
         _broadcast("SUCCESS", "Engagement", f"✅ Automatically replied to {replied_count} comments!")
 

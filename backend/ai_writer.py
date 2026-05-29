@@ -11,6 +11,20 @@ from config import AI_PROVIDER, GEMINI_API_KEY, OPENAI_API_KEY, DEMO_MODE, BRAND
 logger = logging.getLogger(__name__)
 
 
+def get_gemini_client():
+    """Return a configured Gemini GenerativeModel for comment replies, or None if not available."""
+    if not GEMINI_API_KEY:
+        logger.warning("No GEMINI_API_KEY — auto-commenting disabled")
+        return None
+    try:
+        from google import genai
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        return client
+    except Exception as e:
+        logger.error("Failed to init Gemini client: %s", e)
+        return None
+
+
 # ─── Content Types ────────────────────────────────────────────────────────────
 
 CONTENT_TYPES = [
