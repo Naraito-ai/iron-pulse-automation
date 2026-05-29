@@ -152,58 +152,89 @@ def _safe_text(text: str) -> str:
 def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
                            W: int = 1080, H: int = 1920) -> str:
     """
-    Use PIL to render a transparent PNG overlay with:
-    - Bottom scrim (dark gradient)
-    - Orange accent bar
-    - Title text (white, bold)
-    - Body text (orange)
-    - Brand badge (top left)
-    Returns path to the PNG overlay.
+    Use PIL to render a perfectly centered transparent PNG overlay with:
+    - Full-screen subtle dark tint
+    - Translucent black rounded rectangle backing
+    - Centered Title text (white, bold, drop shadow)
+    - Centered Body text (orange, drop shadow)
     """
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw    = ImageDraw.Draw(overlay)
 
-    scrim_y = int(H * 0.40)
+    # 1. Full-screen subtle dark tint to make text pop against any background
+    draw.rectangle([(0, 0), (W, H)], fill=(0, 0, 0, 110))
 
-    # Gradient scrim: fade from transparent to black
-    for y in range(scrim_y, H):
-        t = (y - scrim_y) / (H - scrim_y)
-        alpha = int(180 * min(1.0, t * 1.5))
-        draw.line([(0, y), (W, y)], fill=(0, 0, 0, alpha))
+    font_title  = _load_font(85, bold=True)
+    font_body   = _load_font(60)
 
-    # Orange accent bar
-    draw.rectangle([(0, scrim_y), (W, scrim_y + 8)], fill=(255, 80, 0, 255))
+    # 2. Calculate text boxes and wrap
+    max_text_width = W - 160
+    title_lines = _wrap_text((title or "").upper(), font_title, max_text_width, draw)
+    body_lines = _wrap_text(body or "", font_body, max_text_width, draw)
 
-    font_title  = _load_font(90, bold=True)
-    font_body   = _load_font(54)
-    font_badge  = _load_font(36, bold=True)
+    # Calculate total height of all text
+    total_text_height = 0
+    line_spacing = 15
+    paragraph_spacing = 50
+    
+    title_heights = []
+    for line in title_lines:
+        bbox = draw.textbbox((0, 0), line, font=font_title)
+        th = bbox[3] - bbox[1]
+        title_heights.append(th)
+        total_text_height += th + line_spacing
+        
+    body_heights = []
+    for line in body_lines:
+        bbox = draw.textbbox((0, 0), line, font=font_body)
+        bh = bbox[3] - bbox[1]
+        body_heights.append(bh)
+        total_text_height += bh + line_spacing
+        
+    if title_lines and body_lines:
+        total_text_height += paragraph_spacing
 
-    # Title — centered, white
-    if title:
-        title_lines = _wrap_text(title, font_title, W - 80, draw)
-        y = scrim_y + 30
-        for line in title_lines[:2]:
-            bbox = draw.textbbox((0, 0), line, font=font_title)
-            lw = bbox[2] - bbox[0]
-            x = (W - lw) // 2
-            # Shadow
-            draw.text((x + 3, y + 3), line, font=font_title, fill=(0, 0, 0, 200))
-            draw.text((x, y), line, font=font_title, fill=(255, 255, 255, 255))
-            y += bbox[3] - bbox[1] + 10
+    # 3. Draw elegant dark backing box perfectly centered
+    box_padding = 60
+    box_width = W - 80
+    box_height = total_text_height + (box_padding * 2)
+    box_y1 = (H - box_height) // 2
+    box_x1 = 40
+    box_y2 = box_y1 + box_height
+    box_x2 = box_x1 + box_width
 
-    # Body — centered, orange
-    if body:
-        body_lines = _wrap_text(body, font_body, W - 80, draw)
-        y_body = scrim_y + 180
-        for line in body_lines[:2]:
-            bbox = draw.textbbox((0, 0), line, font=font_body)
-            lw = bbox[2] - bbox[0]
-            x = (W - lw) // 2
-            draw.text((x + 2, y_body + 2), line, font=font_body, fill=(0, 0, 0, 180))
-            draw.text((x, y_body), line, font=font_body, fill=(255, 136, 0, 255))
-            y_body += bbox[3] - bbox[1] + 6
+    # Rounded rectangle for the backing (translucent black)
+    draw.rounded_rectangle([box_x1, box_y1, box_x2, box_y2], radius=30, fill=(0, 0, 0, 180), outline=(255, 80, 0, 200), width=4)
 
-    # Brand badge removed — no brand name on reels
+    # 4. Draw Text
+    current_y = box_y1 + box_padding
+    
+    # Draw Title (White with heavy drop shadow)
+    for i, line in enumerate(title_lines):
+        bbox = draw.textbbox((0, 0), line, font=font_title)
+        lw = bbox[2] - bbox[0]
+        x = (W - lw) // 2
+        
+        # Shadow
+        draw.text((x + 4, current_y + 4), line, font=font_title, fill=(0, 0, 0, 255))
+        # Text
+        draw.text((x, current_y), line, font=font_title, fill=(255, 255, 255, 255))
+        current_y += title_heights[i] + line_spacing
+        
+    if title_lines and body_lines:
+        current_y += paragraph_spacing
+        
+    # Draw Body (Neon Orange with subtle shadow)
+    for i, line in enumerate(body_lines):
+        bbox = draw.textbbox((0, 0), line, font=font_body)
+        lw = bbox[2] - bbox[0]
+        x = (W - lw) // 2
+        
+        # Shadow
+        draw.text((x + 3, current_y + 3), line, font=font_body, fill=(0, 0, 0, 255))
+        # Text
+        draw.text((x, current_y), line, font=font_body, fill=(255, 136, 0, 255))
+        current_y += body_heights[i] + line_spacing
 
     overlay_path = str(GENERATED_DIR / f"{slug}_overlay{clip_idx}.png")
     overlay.save(overlay_path, "PNG")
@@ -281,12 +312,12 @@ def _ensure_music(music_dir: Path) -> list:
 
 # Maps content type → best Pexels search query for maximum visual impact
 PEXELS_QUERY_MAP = {
-    "hot_take":       "intense gym workout barbell",
-    "quick_tip":      "athlete training technique form",
-    "save_list":      "gym equipment weights dumbbells",
-    "myth_buster":    "fitness science gym training",
-    "meme_relatable": "crowded gym monday bench press",
-    "transformation": "body transformation fitness motivation",
+    "hot_take":       "dark gym aesthetic fitness motivation",
+    "quick_tip":      "fitness model training gym aesthetic",
+    "save_list":      "cinematic gym workout motivation",
+    "myth_buster":    "bodybuilding aesthetic gym dark",
+    "meme_relatable": "gym bro fitness lifestyle",
+    "transformation": "gym motivation bodybuilder posing",
 }
 
 

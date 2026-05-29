@@ -152,8 +152,8 @@ Rules:
 Return JSON:
 {{
   "content_type": "myth_buster",
-  "headline": "State the MYTH as if it's true in ≤8 words (e.g. 'You Must Eat Every 2 Hours')",
-  "subheadline": "The truth reveal in 10-12 words",
+  "headline": "State the MYTH as if it's true in 4-6 words",
+  "subheadline": "The truth reveal in 4-6 words",
   "bullet_points": [
     "The actual science/truth about this myth",
     "Why this myth became so popular",
@@ -178,8 +178,8 @@ Rules:
 Return JSON:
 {{
   "content_type": "meme_relatable",
-  "headline": "The meme setup in ≤8 words (e.g. 'POV: It Is International Chest Day')",
-  "subheadline": "The punchline or relatable follow-up",
+  "headline": "The meme setup in 4-6 words",
+  "subheadline": "The punchline or relatable follow-up in 4-6 words",
   "bullet_points": [
     "Relatable gym scenario 1 (funny, specific)",
     "Relatable gym scenario 2 (funny, specific)",
@@ -204,8 +204,8 @@ Rules:
 Return JSON:
 {{
   "content_type": "transformation",
-  "headline": "Transformation angle in ≤8 words (e.g. '3 Habits That Changed My Body')",
-  "subheadline": "The aspiration promise in 10-12 words",
+  "headline": "Transformation angle in 4-6 words",
+  "subheadline": "The aspiration promise in 4-6 words",
   "bullet_points": [
     "Habit/change #1 — specific and actionable",
     "Habit/change #2 — specific and actionable",
