@@ -396,6 +396,17 @@ async def update_token(body: dict):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
+@app.post("/api/config")
+async def update_config(body: dict):
+    """Securely update any system config key in the database."""
+    try:
+        for k, v in body.items():
+            if isinstance(v, str) and v.strip():
+                db.set_config(k, v.strip())
+        return {"status": "success", "message": "Configuration updated successfully."}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 # ─── Serve Frontend ─────────────────────────────────────────────────────────
 
 # Serve Next.js dashboard (static export) at the root URL if it exists
