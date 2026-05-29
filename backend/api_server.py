@@ -41,6 +41,15 @@ app.add_middleware(
 app.mount("/images", StaticFiles(directory=str(Path(__file__).parent / "assets")), name="images")
 app.mount("/generated", StaticFiles(directory=str(Path(__file__).parent / "assets/generated")), name="generated")
 
+# Serve Next.js dashboard (static export) at the root URL if it exists
+frontend_out = Path(__file__).parent.parent / "dashboard" / "out"
+if frontend_out.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_out), html=True), name="frontend")
+else:
+    @app.get("/")
+    def root():
+        return {"message": "AI Instagram Automation API running", "docs": "/docs", "dashboard_status": "Not built yet"}
+
 @app.on_event("startup")
 async def startup_event():
     from image_server import start_image_server
