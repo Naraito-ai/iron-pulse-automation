@@ -407,6 +407,13 @@ async def update_config(body: dict):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+@app.post("/api/force-refresh")
+async def force_refresh():
+    """Force the Auto-Refresher to run immediately."""
+    from token_refresher import check_and_refresh_token
+    result = check_and_refresh_token()
+    return result
+
 # ─── Serve Frontend ─────────────────────────────────────────────────────────
 
 # Serve Next.js dashboard (static export) at the root URL if it exists
