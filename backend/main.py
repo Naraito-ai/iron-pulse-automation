@@ -57,6 +57,8 @@ def _broadcast(level: str, module: str, message: str, run_date: str = ""):
         "SUCCESS": logger.info,
         "WARNING": logger.warning,
         "ERROR":   logger.error,
+    }.get(level, logger.info)
+    
     log_fn("[%s] %s", module, message)
     db.log_event(level, module, message, run_date=run_date)
     
