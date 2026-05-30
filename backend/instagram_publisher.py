@@ -94,7 +94,7 @@ def _create_reel_container(video_url: str, caption: str, cover_url: str = "") ->
         "media_type":  "REELS",
         "video_url":   video_url,
         "caption":     caption[:2200],
-        "thumb_offset": "0",   # Use frame at 0ms = first frame = headline overlay
+        "thumb_offset": "1000",   # Use frame at 1000ms = fully bright frame
     }
     data = _api_post(f"{INSTAGRAM_USER_ID}/media", params)
     logger.info("Raw Meta API response for REELS creation: %s", data)

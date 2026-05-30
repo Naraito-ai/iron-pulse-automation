@@ -463,8 +463,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                     "ffmpeg", "-y",
                     "-ss", str(start_sec), "-i", pexels_video_path,
                     "-t", str(DURATION),
-                    "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
-                           f"fade=t=in:st=0:d=0.3,fade=t=out:st={DURATION-0.3}:d=0.3",
+                    "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}",
                     "-fps_mode", "cfr", "-r", str(FPS),
                     "-an", "-threads", "1",
                     "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "fast", "-crf", "18",
@@ -481,9 +480,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                 f"scale={W}:{H}:force_original_aspect_ratio=increase,"
                 f"crop={W}:{H},"
                 f"zoompan=z='{z_expr}':x='{x_expr}':y='{y_expr}'"
-                f":d={FRAMES}:s={W}x{H}:fps={FPS},"
-                f"fade=t=in:st=0:d=0.4,"
-                f"fade=t=out:st={DURATION - 0.4}:d=0.4"
+                f":d={FRAMES}:s={W}x{H}:fps={FPS}"
             )
             try:
                 subprocess.run([
