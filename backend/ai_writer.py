@@ -63,19 +63,20 @@ Your content types and their goals:
 
 PROMPTS = {
 
-"hot_take": """Generate a HOT TAKE / controversial opinion post for a fitness Instagram page.
+"hot_take": """Generate a VIRAL HOT TAKE / controversial opinion post for fitness Instagram.
 Topic context: {title}
 
 Rules:
-- The headline MUST be controversial and debatable (e.g. "Creatine is overrated", "Cardio is a waste of time", "Protein shakes are a scam")
-- Bullet points = the argument FOR the hot take (science-backed)
-- Caption starts with the hot take as a BOLD statement, ends with a debate question
-- CTA should spark comments (e.g. "Agree or disagree? Comment below 👇")
+- Headline MUST be aggressively polarizing and stop the scroll (e.g. "Unpopular Opinion: Cardio is useless", "Creatine is making you fat").
+- Bullet points = the argument FOR the hot take (science-backed but written like a cheat code).
+- Caption starts with the hot take as a BOLD statement, ends with a strong debate question.
+- MUST include an SEO-rich paragraph at the very bottom of the caption (hidden below hashtags) to boost algorithmic reach (e.g., "SEO: fitness tips, gym advice, bodybuilding, workout hacks, losing weight").
+- CTA should spark angry/passionate comments.
 
 Return JSON:
 {{
   "content_type": "hot_take",
-  "headline": "The controversial claim in ≤8 words (e.g. 'Cardio Is Killing Your Gains')",
+  "headline": "Aggressively polarizing hook in ≤7 words",
   "subheadline": "The provocative follow-up in 10-12 words",
   "bullet_points": [
     "Argument point 1 with specific fact",
@@ -83,97 +84,96 @@ Return JSON:
     "Argument point 3 with specific fact"
   ],
   "stat_highlight": "One shocking stat that supports the hot take",
-  "caption": "Instagram caption 150-250 chars. Open with bold hot take. End with debate question. Use 2-3 line breaks.",
+  "caption": "Instagram caption 150-250 chars. Open bold. End with debate question. Use 2-3 line breaks. Then add hashtags. Then add 'SEO: [comma separated list of 15 long-tail fitness keywords]'",
   "hashtags": "#HotTake #FitnessMyths #GymTruth #FitnessFacts #GymLife #Bodybuilding #Fitness #WorkoutTips #GymMotivation #",
-  "cta": "Agree or disagree? Drop your take below 👇"
+  "cta": "Comment 'LINK' for my full guide, or debate me below 👇"
 }}""",
 
-"quick_tip": """Generate a QUICK TIP post for a fitness Instagram Reel (shown in 5-7 seconds).
+"quick_tip": """Generate a VIRAL CHEAT CODE / QUICK TIP post for a fitness Instagram Reel (fast paced).
 Topic context: {title}
 
 Rules:
-- ONE single powerful actionable tip
-- Headline = the tip itself (shocking or surprising)
-- Body = why it works (1 sentence)
-- Caption is SHORT (under 100 chars) - Reels captions are barely read
-- CTA = "Save for your next workout 💪"
+- ONE single powerful actionable "Hack" or "Cheat Code".
+- Headline = "Fitness Cheat Code #X" or a highly shocking actionable tip.
+- Body = why it works (1 sentence).
+- Caption is SHORT and includes an SEO rich paragraph at the bottom.
+- CTA = "Comment 'GUIDE' for my full protocol".
 
 Return JSON:
 {{
   "content_type": "quick_tip",
-  "headline": "The single tip in ≤8 words (actionable, e.g. 'Rest 3 Minutes Between Sets Not 1')",
+  "headline": "The single cheat code tip in ≤7 words (e.g. 'Fitness Cheat Code: 3 Min Rest')",
   "subheadline": "Why this works in 8-10 words",
   "bullet_points": [
     "The science behind it in simple English",
-    "Who benefits most from this tip",
+    "Who benefits most from this hack",
     "How to actually apply it today"
   ],
   "stat_highlight": "A number that proves it works (e.g. '2x more strength gains')",
-  "caption": "Short punchy caption under 100 chars. Hook + one line. Line break. Hashtags.",
+  "caption": "Short punchy caption under 100 chars. Then add hashtags. Then add 'SEO: [15 long-tail fitness keywords]'",
   "hashtags": "#GymTip #WorkoutTips #FitnessHack #GainsTip #GymLife #Fitness #Bodybuilding #GymMotivation #TrainingTips #",
-  "cta": "Save for your next workout 💪"
+  "cta": "Comment 'GUIDE' for my full protocol 💪"
 }}""",
 
-"save_list": """Generate a SAVE-WORTHY LIST post for fitness Instagram.
+"save_list": """Generate a VIRAL SAVE-WORTHY LIST post for fitness Instagram.
 Topic context: {title}
 
 Rules:
-- Title follows "X Things/Mistakes/Rules that [outcome]" format
-- MUST include "Save this 🔖" in the caption
-- Each bullet = one item from the list (punchy, specific)
-- Caption ends with "Tag someone who needs to see this"
+- Title follows "X Secret Rules that [outcome]" or "X Things Your Trainer Won't Tell You" format.
+- MUST include "Save this 🔖" in the caption.
+- Each bullet = one item from the list (punchy, highly specific, slightly controversial if possible).
+- Caption must include an SEO-rich paragraph at the very bottom (hidden below hashtags) to boost algorithmic reach.
 
 Return JSON:
 {{
   "content_type": "save_list",
-  "headline": "List title in ≤8 words (e.g. '5 Mistakes Killing Your Muscle Gains')",
+  "headline": "List title in ≤7 words (e.g. '3 Secrets Your Trainer Is Hiding')",
   "subheadline": "What they'll learn from saving this",
   "bullet_points": [
-    "Mistake/Rule #1 — what it is and the quick fix",
-    "Mistake/Rule #2 — what it is and the quick fix",
-    "Mistake/Rule #3 — what it is and the quick fix"
+    "Rule #1 — what it is and the quick fix",
+    "Rule #2 — what it is and the quick fix",
+    "Rule #3 — what it is and the quick fix"
   ],
-  "stat_highlight": "A stat that shows how common this mistake is",
-  "caption": "Caption 200-280 chars. Open with hook. Mention 'Save 🔖'. End with 'Tag someone who needs this'. Line breaks.",
+  "stat_highlight": "A stat that shows how rare this knowledge is",
+  "caption": "Caption 200-280 chars. Open with hook. Mention 'Save 🔖'. Use 2-3 line breaks. Then add hashtags. Then add 'SEO: [comma separated list of 15 long-tail fitness keywords]'",
   "hashtags": "#GainsTips #GymMistakes #FitnessAdvice #WorkoutTips #GymLife #Bodybuilding #Fitness #GymMotivation #FitnessTips #",
-  "cta": "Save 🔖 + Tag someone who needs this"
+  "cta": "Save 🔖 + Comment 'WORKOUT' for my free program"
 }}""",
 
-"myth_buster": """Generate a MYTH vs FACT post for fitness Instagram.
+"myth_buster": """Generate a VIRAL MYTH BUSTER post for fitness Instagram.
 Topic context: {title}
 
 Rules:
-- Expose a VERY common fitness myth that even experienced gym-goers believe
-- Headline = the myth stated as fact (so reader thinks "wait, is that true?")
-- Bullet points = the facts that BUST the myth
-- Caption starts with "MYTH:" then drops the truth
-- Creates saves because people want to share the truth
+- Expose a VERY common fitness myth that even experienced gym-goers believe.
+- Headline MUST be controversial ("The Biggest Lie You've Been Told About X").
+- Bullet points = the brutal facts that BUST the myth.
+- Caption starts with "We've all been lied to..." then drops the truth.
+- Caption must include an SEO-rich paragraph at the very bottom (hidden below hashtags) to boost algorithmic reach.
 
 Return JSON:
 {{
   "content_type": "myth_buster",
-  "headline": "State the MYTH as if it's true in 4-6 words",
-  "subheadline": "The truth reveal in 4-6 words",
+  "headline": "The shocking myth-busting hook in ≤7 words",
+  "subheadline": "The brutal truth reveal in 4-6 words",
   "bullet_points": [
     "The actual science/truth about this myth",
-    "Why this myth became so popular",
+    "Why the fitness industry lied to you",
     "What you should actually do instead"
   ],
   "stat_highlight": "A research stat that proves the myth wrong",
-  "caption": "Caption 200-280 chars. Start with 'MYTH: [thing]'. Then 'FACT: [truth]'. End with save + share CTA.",
+  "caption": "Caption 200-280 chars. Start with 'We've all been lied to...'. Drop the truth. Use 2-3 line breaks. Then add hashtags. Then add 'SEO: [15 long-tail fitness keywords]'",
   "hashtags": "#FitnessMyths #GymFacts #FitnessTruth #ScienceOfFitness #GymLife #Bodybuilding #WorkoutFacts #GymMotivation #FitnessEducation #",
-  "cta": "Share this before someone you know falls for this 🔁"
+  "cta": "Share to save a bro from this lie 🔁"
 }}""",
 
-"meme_relatable": """Generate a RELATABLE GYM MEME / humor post for fitness Instagram.
+"meme_relatable": """Generate a VIRAL RELATABLE GYM MEME / humor post for fitness Instagram.
 Topic context: {title}
 
 Rules:
-- Must be FUNNY and relatable to gym-goers
-- "POV:", "Nobody:", "Me:", "Every gym bro:" format works great
-- Bullet points = the punchlines / relatable scenarios
-- Caption is short and funny
-- Goal = maximum shares ("tag your gym partner")
+- Must be HYPER-RELATABLE to modern gym culture (e.g. gym crushes, missing PRs, taking pre-workout dry, waiting for squat racks).
+- "POV:", "Nobody:", "Me:", "Every gym bro:" format works great.
+- Bullet points = the punchlines / relatable scenarios.
+- Caption is short, funny, and MUST include an SEO-rich paragraph at the very bottom (hidden below hashtags) to boost algorithmic reach.
 
 Return JSON:
 {{
@@ -185,21 +185,20 @@ Return JSON:
     "Relatable gym scenario 2 (funny, specific)",
     "Relatable gym scenario 3 (funny, specific)"
   ],
-  "stat_highlight": "Funny fake stat or relatable number (e.g. '99% of gym bros own a creatine tub')",
-  "caption": "Funny caption 100-180 chars. Use gym humor. End with 'Tag your gym partner 😂'. Line breaks.",
+  "stat_highlight": "Funny fake stat or relatable number (e.g. '99% of guys skip calves')",
+  "caption": "Funny caption 100-180 chars. Use gym humor. End with 'Tag your gym partner 😂'. Use 2-3 line breaks. Then add hashtags. Then add 'SEO: [15 long-tail fitness keywords]'",
   "hashtags": "#GymMemes #GymHumor #GymLife #GymProblems #GymBro #FitnessMemes #GymFunny #WorkoutMemes #GymMotivation #",
   "cta": "Tag your gym partner who does this 😂"
 }}""",
 
-"transformation": """Generate a TRANSFORMATION TIPS post for fitness Instagram.
+"transformation": """Generate a VIRAL TRANSFORMATION TIPS post for fitness Instagram.
 Topic context: {title}
 
 Rules:  
-- Frame as "before vs after" mindset or habits
-- Bullet points = the specific habits/changes that drive transformation
-- Very emotional, aspiration-driven
-- Makes people save because they want to remember the tips
-- Caption is motivational and personal
+- Frame as brutal truths or "cheat codes" for transformation.
+- Bullet points = the specific habits/changes that actually drive transformation.
+- Very emotional, aspiration-driven, but straightforward.
+- Caption MUST include an SEO-rich paragraph at the very bottom (hidden below hashtags) to boost algorithmic reach.
 
 Return JSON:
 {{
@@ -207,12 +206,12 @@ Return JSON:
   "headline": "Transformation angle in 4-6 words",
   "subheadline": "The aspiration promise in 4-6 words",
   "bullet_points": [
-    "Habit/change #1 — specific and actionable",
-    "Habit/change #2 — specific and actionable",
-    "Habit/change #3 — specific and actionable"
+    "Brutal truth/habit #1 — specific and actionable",
+    "Brutal truth/habit #2 — specific and actionable",
+    "Brutal truth/habit #3 — specific and actionable"
   ],
   "stat_highlight": "A timeframe or result stat (e.g. '12 weeks to visible abs')",
-  "caption": "Motivational caption 200-280 chars. Personal and inspiring. End with 'Save this for when you need motivation 🔖'.",
+  "caption": "Motivational caption 200-280 chars. Personal and inspiring. End with 'Save this 🔖'. Use 2-3 line breaks. Then add hashtags. Then add 'SEO: [15 long-tail fitness keywords]'",
   "hashtags": "#TransformationTips #FitnessJourney #GymTransformation #BodyTransformation #GymMotivation #FitnessGoals #GymLife #Bodybuilding #FitLife #",
   "cta": "Save this for when you need motivation 🔖"
 }}""",

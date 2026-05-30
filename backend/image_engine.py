@@ -433,8 +433,8 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
     else:
         slides_text = [{"title": "", "body": ""} for _ in slide_paths]
 
-    FPS, DURATION = 30, 4
-    FRAMES = FPS * DURATION
+    FPS, DURATION = 30, 2.5
+    FRAMES = int(FPS * DURATION)
     W, H   = REEL_WIDTH, REEL_HEIGHT
 
     pan_configs = [
