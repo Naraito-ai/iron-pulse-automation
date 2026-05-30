@@ -467,7 +467,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                            f"fade=t=in:st=0:d=0.3,fade=t=out:st={DURATION-0.3}:d=0.3",
                     "-fps_mode", "cfr", "-r", str(FPS),
                     "-an", "-threads", "1",
-                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "24",
+                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "fast", "-crf", "18",
                     str(zoom_clip),
                 ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 logger.info("Pexels clip %d extracted for slug %s", i, slug)
@@ -491,7 +491,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                     "-t", str(DURATION), "-vf", zoom_vf,
                     "-fps_mode", "cfr", "-r", str(FPS),
                     "-threads", "1",
-                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "fast", "-crf", "18",
                     str(zoom_clip),
                 ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             except subprocess.CalledProcessError:
@@ -500,7 +500,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                     "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}",
                     "-fps_mode", "cfr", "-r", str(FPS),
                     "-threads", "1",
-                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "fast", "-crf", "18",
                     str(zoom_clip),
                 ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -516,7 +516,7 @@ def generate_reel_video(slide_paths: list[str], slug: str, content: dict = None)
                     "-i", str(zoom_clip),
                     "-i", overlay_path,
                     "-filter_complex", "[0:v][1:v]overlay=0:0",
-                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:v", "libx264", "-preset", "fast", "-crf", "18",
                     "-threads", "1",
                     "-pix_fmt", "yuv420p",
                     str(tmp_clip),
