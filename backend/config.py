@@ -64,7 +64,7 @@ GRAPH_API_VERSION      = "v21.0"
 GRAPH_API_BASE         = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
 
 # ─── Image Hosting ────────────────────────────────────────────────────────────
-IMAGE_HOST_URL       = os.getenv("IMAGE_HOST_URL", "http://localhost:8888")
+IMAGE_HOST_URL       = os.getenv("IMAGE_HOST_URL", "https://backend-production-2d5c.up.railway.app")
 IMAGE_SERVER_PORT    = int(os.getenv("IMAGE_SERVER_PORT", "8888"))
 
 # ─── Image Dimensions ────────────────────────────────────────────────────────

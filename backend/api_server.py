@@ -267,6 +267,9 @@ async def get_drafts():
     today = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
     posts = db.get_generated_posts(today)
     drafts = [p for p in posts if p["status"] in ("draft", "approved", "rejected")]
+    for d in drafts:
+        if d.get("reel_thumb_url"):
+            d["reel_thumb_url"] = d["reel_thumb_url"].replace("http://localhost:8888", "https://backend-production-2d5c.up.railway.app")
     return {"drafts": drafts, "count": len(drafts)}
 
 @app.post("/api/drafts/{post_id}/approve")
