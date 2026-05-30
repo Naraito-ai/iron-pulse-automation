@@ -242,32 +242,24 @@ def _make_caption_overlay(title: str, body: str, slug: str, clip_idx: int,
 
 
 def _fetch_tts_audio(text: str, output_path: str) -> bool:
-    """Fetch AI voiceover using gTTS (100% Free) and pitch-shift it to sound deep/masculine."""
+    """Fetch AI voiceover using edge-tts (100% Free, ultra-realistic TikTok voices)."""
     import subprocess
-    import sys
     try:
-        from gtts import gTTS
-        logger.info("Generating free voiceover with Google TTS...")
-        tts = gTTS(text=text[:500], lang="en", tld="us")
-        temp_audio = str(output_path) + "_temp.mp3"
-        tts.save(temp_audio)
+        logger.info("Generating free ultra-realistic voiceover with Edge TTS...")
+        # Christopher is a popular, energetic male voice used on TikTok
+        voice = "en-US-ChristopherNeural"
         
-        # Pitch shift the female Google voice down to make it sound deep and masculine
-        # asetrate lowers pitch, aresample restores original rate, atempo speeds it back up
-        pitch_factor = 0.7  # 0.7 is a deep pitch
         subprocess.run([
-            "ffmpeg", "-y", "-i", temp_audio,
-            "-filter:a", f"asetrate=24000*{pitch_factor},aresample=24000,atempo=1/{pitch_factor}",
-            output_path
+            "edge-tts", 
+            "--voice", voice,
+            "--text", text[:800],
+            "--write-media", str(output_path)
         ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
-        try: os.remove(temp_audio)
-        except Exception: pass
-        
-        logger.info("gTTS voiceover saved and pitch-shifted successfully")
+        logger.info("Edge TTS voiceover generated successfully")
         return True
     except Exception as e:
-        logger.error("TTS fetch failed: %s", e)
+        logger.error("Edge TTS fetch failed: %s", e)
         return False
 
 
