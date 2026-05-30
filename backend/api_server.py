@@ -140,8 +140,8 @@ async def get_status():
     run_history = db.get_run_history(limit=1)
     last_run = run_history[0] if run_history else None
 
-    # Check Instagram token validity via real API call
-    token = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
+    # Check Instagram token validity via real API call using the active DB token
+    token = db.get_ig_token()
     ig_connected = False
     ig_user_id = ""
     if token:
