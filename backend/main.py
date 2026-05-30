@@ -185,10 +185,15 @@ POST_SCHEDULE = [
 
 def run_custom_post(prompt: str):
     """Bypasses news and generates a single custom post immediately."""
-    from ai_writer import generate_fitness_content
-    from image_engine import generate_carousel
-    
     run_date = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+    try:
+        from ai_writer import generate_fitness_content
+        from image_engine import generate_carousel
+    except Exception as e:
+        import traceback
+        logger.error(f"Import error in run_custom_post: {e}\n{traceback.format_exc()}")
+        return
+
     _broadcast("INFO", "Custom", f"🚀 Generating custom post: {prompt[:40]}...", run_date)
 
     story = {
