@@ -187,7 +187,7 @@ def run_custom_post(prompt: str):
     """Bypasses news and generates a single custom post immediately."""
     run_date = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
     try:
-        from ai_writer import generate_fitness_content
+        from ai_writer import generate_content_for_story
         from image_engine import generate_carousel
     except Exception as e:
         import traceback
@@ -208,7 +208,7 @@ def run_custom_post(prompt: str):
     story_id = story_ids[0]
 
     try:
-        content = generate_fitness_content(story, rank=999)
+        content = generate_content_for_story(story, rank=999)
         _broadcast("INFO", "Custom", "Content generated, rendering media...", run_date)
 
         post_data = generate_carousel(content, story, 999, run_date)
