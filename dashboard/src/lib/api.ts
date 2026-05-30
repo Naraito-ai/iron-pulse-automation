@@ -1,7 +1,7 @@
 // lib/api.ts — Backend API client for the dashboard
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-2d5c.up.railway.app';
-const WS_URL   = process.env.NEXT_PUBLIC_WS_URL  || 'wss://backend-production-2d5c.up.railway.app/ws/live';
+const API_BASE = 'https://backend-production-2d5c.up.railway.app';
+const WS_URL   = 'wss://backend-production-2d5c.up.railway.app/ws/live';
 
 export interface NewsStory {
   id: number;
