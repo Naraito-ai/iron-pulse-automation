@@ -237,12 +237,15 @@ def fetch_top_ai_news() -> list[dict]:
     # Filter: must contain at least one fitness keyword
     filtered = [s for s in all_stories if s.get("keywords")]
 
-    # Deduplicate by title hash
+    import database as db
+    recent_titles = db.get_recent_story_titles(days=7)
+    
+    # Deduplicate by title hash and skip already processed
     seen_hashes: set[str] = set()
     unique: list[dict] = []
     for s in filtered:
         h = _story_hash(s["title"])
-        if h not in seen_hashes:
+        if h not in seen_hashes and s["title"] not in recent_titles:
             seen_hashes.add(h)
             unique.append(s)
 

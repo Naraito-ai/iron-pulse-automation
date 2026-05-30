@@ -189,18 +189,29 @@ def save_news_stories(run_date: str, stories: list[dict]) -> list[int]:
     return ids
 
 
-def get_latest_news(run_date: str = None) -> list[dict]:
+def get_latest_news(run_date: str = "", limit: int = 5) -> list[dict]:
+    """Retrieve top N stories, optionally filtered by run_date."""
     with get_db() as conn:
         if run_date:
-            rows = conn.execute(
-                "SELECT * FROM news_stories WHERE run_date=? ORDER BY rank",
-                (run_date,)
-            ).fetchall()
+            cur = conn.execute(
+                "SELECT * FROM news_stories WHERE run_date=? ORDER BY rank LIMIT ?",
+                (run_date, limit)
+            )
         else:
-            rows = conn.execute(
-                "SELECT * FROM news_stories ORDER BY created_at DESC LIMIT 5"
-            ).fetchall()
-        return [dict(r) for r in rows]
+            cur = conn.execute(
+                "SELECT * FROM news_stories ORDER BY created_at DESC LIMIT ?",
+                (limit,)
+            )
+        return [dict(r) for r in cur.fetchall()]
+
+def get_recent_story_titles(days: int = 7) -> set[str]:
+    """Retrieve titles of stories processed in the last N days to prevent duplication."""
+    with get_db() as conn:
+        cur = conn.execute(
+            "SELECT title FROM news_stories WHERE created_at >= date('now', ?)",
+            (f'-{days} days',)
+        )
+        return {r["title"] for r in cur.fetchall()}
 
 
 # ─── Generated Posts ──────────────────────────────────────────────────────────
