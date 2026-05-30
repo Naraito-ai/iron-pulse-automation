@@ -46,10 +46,22 @@ def get_token_info(access_token: str) -> dict:
             "access_token": auth_token,
         }, timeout=15)
         data = resp.json().get("data", {})
+        error_info = resp.json().get("error", {})
+
+        # If it's a rate limit error, optimistically assume token is still valid
+        if error_info.get("code") in [4, 17, 32, 613] or "limit reached" in error_info.get("message", "").lower():
+            logger.warning("Meta rate limit reached on debug_token. Optimistically assuming token is valid.")
+            return {"is_valid": True, "expires_at": None, "days_remaining": 60, "rate_limited": True}
 
         if not data.get("is_valid"):
             # Fallback check using /me in case App Token fails or is missing
             me_resp = requests.get(f"{GRAPH_API_BASE}/me", params={"access_token": access_token})
+            me_error = me_resp.json().get("error", {})
+            
+            if me_error.get("code") in [4, 17, 32, 613] or "limit reached" in me_error.get("message", "").lower():
+                logger.warning("Meta rate limit reached on /me. Optimistically assuming token is valid.")
+                return {"is_valid": True, "expires_at": None, "days_remaining": 60, "rate_limited": True}
+
             if me_resp.status_code == 200:
                 # Token works, but we can't inspect expiry. Assume short-lived (0 days) to force refresh.
                 return {"is_valid": True, "expires_at": None, "days_remaining": 0}

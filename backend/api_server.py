@@ -156,6 +156,11 @@ async def get_status():
             if "id" in data and "error" not in data:
                 ig_connected = True
                 ig_user_id = data.get("id", "")
+            else:
+                error_info = data.get("error", {})
+                if error_info.get("code") in [4, 17, 32, 613] or "limit reached" in error_info.get("message", "").lower():
+                    logger.warning("Meta rate limit reached on /me during status check. Optimistically assuming connected.")
+                    ig_connected = True
         except Exception:
             ig_connected = False
 
